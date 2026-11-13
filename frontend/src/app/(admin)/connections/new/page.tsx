@@ -1,4 +1,7 @@
-import { PageHeader } from "@/components/page-header";
+import { Suspense } from "react";
+
+import { ManageOnly, MembersCantChange } from "@/components/manage-only";
+import { PageHeader, TableSkeleton } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { ConnectionForm } from "../connection-form";
@@ -13,7 +16,11 @@ export default function NewConnectionPage() {
       />
       <Card>
         <CardContent>
-          <ConnectionForm />
+          <Suspense fallback={<TableSkeleton />}>
+            <ManageOnly fallback={<MembersCantChange what="add connections" />}>
+              <ConnectionForm />
+            </ManageOnly>
+          </Suspense>
         </CardContent>
       </Card>
     </div>

@@ -78,3 +78,28 @@ class AuthToken(Base):
     created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=_now)
 
     user: Mapped[User] = relationship(lazy="joined")
+
+
+class Invitation(Base):
+    """An emailed invite to join an organization with a given role.
+
+    The link works once, until it expires or is revoked. Only a SHA-256 hash of
+    its token is stored. A new invite to the same email in the same
+    organization revokes the older pending one.
+    """
+
+    __tablename__ = "invitations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), index=True)
+    email: Mapped[str] = mapped_column(String(254))
+    role: Mapped[str] = mapped_column(String(20))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    invited_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    expires_at: Mapped[datetime] = mapped_column(UtcDateTime())
+    accepted_at: Mapped[datetime | None] = mapped_column(UtcDateTime())
+    revoked_at: Mapped[datetime | None] = mapped_column(UtcDateTime())
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=_now)
+
+    organization: Mapped[Organization] = relationship(lazy="joined")
+    invited_by: Mapped[User | None] = relationship(lazy="joined")

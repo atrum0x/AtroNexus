@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 
 from app.crypto import encrypt
-from app.deps import DbSession, OrgId, VerifiedEmail, get_current_user
+from app.deps import DbSession, ManagerOnly, OrgId, VerifiedEmail, get_current_user
 from app.ifs.client import IfsClient, IfsError, forget_token
 from app.ifs.models import IfsConnection
 from app.ifs.schemas import CheckResult, IfsConnectionIn, IfsConnectionOut
@@ -70,7 +70,7 @@ def list_connections(db: DbSession, org_id: OrgId) -> list[IfsConnectionOut]:
     return [_out(c) for c in rows]
 
 
-@router.post("", response_model=IfsConnectionOut, status_code=status.HTTP_201_CREATED, dependencies=[VerifiedEmail])
+@router.post("", response_model=IfsConnectionOut, status_code=status.HTTP_201_CREATED, dependencies=[ManagerOnly, VerifiedEmail])
 def create_connection(body: IfsConnectionIn, db: DbSession, org_id: OrgId) -> IfsConnectionOut:
     if not body.secret:
         raise HTTPException(
@@ -88,7 +88,7 @@ def get_connection(connection_id: int, db: DbSession, org_id: OrgId) -> IfsConne
     return _out(_get(db, org_id, connection_id))
 
 
-@router.put("/{connection_id}", response_model=IfsConnectionOut, dependencies=[VerifiedEmail])
+@router.put("/{connection_id}", response_model=IfsConnectionOut, dependencies=[ManagerOnly, VerifiedEmail])
 def update_connection(
     connection_id: int, body: IfsConnectionIn, db: DbSession, org_id: OrgId
 ) -> IfsConnectionOut:
@@ -99,7 +99,7 @@ def update_connection(
     return _out(conn)
 
 
-@router.delete("/{connection_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{connection_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[ManagerOnly])
 def delete_connection(connection_id: int, db: DbSession, org_id: OrgId) -> None:
     from app.capture.models import CaptureTarget
 
@@ -116,7 +116,7 @@ def delete_connection(connection_id: int, db: DbSession, org_id: OrgId) -> None:
     forget_token(connection_id)
 
 
-@router.post("/{connection_id}/test", response_model=CheckResult, dependencies=[VerifiedEmail])
+@router.post("/{connection_id}/test", response_model=CheckResult, dependencies=[ManagerOnly, VerifiedEmail])
 def test_connection(connection_id: int, db: DbSession, org_id: OrgId) -> CheckResult:
     conn = _get(db, org_id, connection_id)
     client = IfsClient(conn)

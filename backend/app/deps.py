@@ -69,3 +69,15 @@ def require_verified_email(user: CurrentUser) -> None:
 
 
 VerifiedEmail = Depends(require_verified_email)
+
+
+MANAGER_ROLES = ("owner", "admin")
+
+
+def require_manager(user: CurrentUser) -> None:
+    """Owners and admins change settings; members can only look."""
+    if user.role not in MANAGER_ROLES:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only owners and admins can do this.")
+
+
+ManagerOnly = Depends(require_manager)

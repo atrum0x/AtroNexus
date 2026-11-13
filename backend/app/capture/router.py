@@ -16,7 +16,7 @@ from app.capture.schemas import (
     CaptureTargetOut,
 )
 from app.capture.template import DEFAULT_BODY_TEMPLATE, DEFAULT_ENDPOINT_PATH, PLACEHOLDERS
-from app.deps import DbSession, OrgId, VerifiedEmail, get_current_user
+from app.deps import DbSession, ManagerOnly, OrgId, VerifiedEmail, get_current_user
 from app.ifs.client import IfsClient, IfsError
 from app.ifs.router import get_org_connection
 from app.models import ORG_ACTIVE
@@ -111,7 +111,7 @@ def list_capture_targets(db: DbSession, org_id: OrgId) -> list[CaptureTargetOut]
     return [_target_out(t) for t in rows]
 
 
-@router.post("/targets", response_model=CaptureTargetOut, status_code=status.HTTP_201_CREATED, dependencies=[VerifiedEmail])
+@router.post("/targets", response_model=CaptureTargetOut, status_code=status.HTTP_201_CREATED, dependencies=[ManagerOnly, VerifiedEmail])
 def create_capture_target(body: CaptureTargetIn, db: DbSession, org_id: OrgId) -> CaptureTargetOut:
     target = CaptureTarget(organization_id=org_id)
     _apply(db, org_id, target, body)
@@ -125,7 +125,7 @@ def get_capture_target(target_id: int, db: DbSession, org_id: OrgId) -> CaptureT
     return _target_out(_get_target(db, org_id, target_id))
 
 
-@router.put("/targets/{target_id}", response_model=CaptureTargetOut, dependencies=[VerifiedEmail])
+@router.put("/targets/{target_id}", response_model=CaptureTargetOut, dependencies=[ManagerOnly, VerifiedEmail])
 def update_capture_target(
     target_id: int, body: CaptureTargetIn, db: DbSession, org_id: OrgId
 ) -> CaptureTargetOut:
@@ -135,7 +135,7 @@ def update_capture_target(
     return _target_out(target)
 
 
-@router.delete("/targets/{target_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/targets/{target_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[ManagerOnly])
 def delete_capture_target(target_id: int, db: DbSession, org_id: OrgId) -> None:
     target = _get_target(db, org_id, target_id)
     used = db.scalar(select(func.count()).select_from(Capture).where(Capture.target_id == target.id))
@@ -148,7 +148,7 @@ def delete_capture_target(target_id: int, db: DbSession, org_id: OrgId) -> None:
     db.commit()
 
 
-@router.post("/targets/{target_id}/test", response_model=CheckResult, dependencies=[VerifiedEmail])
+@router.post("/targets/{target_id}/test", response_model=CheckResult, dependencies=[ManagerOnly, VerifiedEmail])
 def test_capture_target(target_id: int, db: DbSession, org_id: OrgId) -> CheckResult:
     """Signs in and reads the projection's service root, without writing anything."""
     target = _get_target(db, org_id, target_id)

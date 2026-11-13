@@ -5,6 +5,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './acceptInvitation';
 export * from './captureDefaults';
 export * from './captureDefaultsHttpMethod';
 export * from './captureDefaultsPlaceholders';
@@ -25,11 +26,21 @@ export * from './ifsConnectionIn';
 export * from './ifsConnectionInAuthType';
 export * from './ifsConnectionOut';
 export * from './ifsConnectionOutAuthType';
+export * from './invitationIn';
+export * from './invitationInfo';
+export * from './invitationInfoRole';
+export * from './invitationInRole';
+export * from './invitationOut';
+export * from './invitationOutRole';
 export * from './listCapturesParams';
 export * from './loginRequest';
+export * from './memberOut';
+export * from './memberOutRole';
 export * from './messageOut';
 export * from './organizationOut';
 export * from './resetPasswordRequest';
+export * from './roleChange';
+export * from './roleChangeRole';
 export * from './signupRequest';
 export * from './tokenResponse';
 export * from './userOut';

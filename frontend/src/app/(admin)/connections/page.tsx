@@ -3,8 +3,11 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { listConnections } from "@/api/generated/endpoints/ifs-connections/ifs-connections";
+import { ManageOnly } from "@/components/manage-only";
 import { EditButton, PageHeader, TableSkeleton } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
+import { getCurrentUser } from "@/lib/auth";
+import { canManage } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -23,10 +26,14 @@ export default function ConnectionsPage() {
         title="IFS connections"
         description="The IFS environments the tools write to, and the service user each one signs in as."
         action={
-          <Button render={<Link href="/connections/new" />} nativeButton={false}>
-            <Plus />
-            New connection
-          </Button>
+          <Suspense fallback={null}>
+            <ManageOnly>
+              <Button render={<Link href="/connections/new" />} nativeButton={false}>
+                <Plus />
+                New connection
+              </Button>
+            </ManageOnly>
+          </Suspense>
         }
       />
       <Suspense fallback={<TableSkeleton />}>
@@ -37,7 +44,8 @@ export default function ConnectionsPage() {
 }
 
 async function ConnectionsTable() {
-  const connections = await listConnections();
+  const [connections, user] = await Promise.all([listConnections(), getCurrentUser()]);
+  const manager = canManage(user);
 
   if (connections.length === 0) {
     return (
@@ -77,7 +85,7 @@ async function ConnectionsTable() {
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
-                <EditButton href={`/connections/${c.id}`} label={`Edit ${c.name}`} />
+                {manager && <EditButton href={`/connections/${c.id}`} label={`Edit ${c.name}`} />}
               </TableCell>
             </TableRow>
           ))}

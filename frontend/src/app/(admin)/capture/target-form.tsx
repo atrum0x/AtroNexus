@@ -34,15 +34,19 @@ export function TargetForm({
   target,
   connections,
   defaults,
+  readOnly = false,
 }: {
   target?: CaptureTargetOut;
   connections: IfsConnectionOut[];
   defaults: CaptureDefaults;
+  /** For members: shows the settings without a way to change them. */
+  readOnly?: boolean;
 }) {
   const [state, action, pending] = useActionState<TargetFormState, FormData>(
     saveTarget.bind(null, target?.id ?? null),
     {},
   );
+  const locked = pending || readOnly;
   const v = { ...target, ...state.values };
   const connectionItems = connections.map((c) => ({ value: String(c.id), label: c.name }));
 
@@ -62,7 +66,7 @@ export function TargetForm({
       )}
 
       <Field label="Name" htmlFor="name" hint="For example: Purchase receipt location.">
-        <Input id="name" name="name" required defaultValue={v.name} disabled={pending} />
+        <Input id="name" name="name" required defaultValue={v.name} disabled={locked} />
       </Field>
 
       <Field label="IFS connection" htmlFor="connection_id" hint="The service user that writes the result.">
@@ -72,7 +76,7 @@ export function TargetForm({
           value={connectionId}
           onValueChange={setConnectionId}
           required
-          disabled={pending}
+          disabled={locked}
         >
           <SelectTrigger id="connection_id" className="w-full">
             <SelectValue placeholder="Pick a connection" />
@@ -93,7 +97,7 @@ export function TargetForm({
           items={METHODS}
           value={method}
           onValueChange={(value) => value && setMethod(value)}
-          disabled={pending}
+          disabled={locked}
         >
           <SelectTrigger id="http_method" className="w-full">
             <SelectValue />
@@ -126,7 +130,7 @@ export function TargetForm({
           required
           className="font-mono text-xs"
           defaultValue={v.endpoint_path ?? defaults.endpoint_path}
-          disabled={pending}
+          disabled={locked}
         />
       </Field>
 
@@ -143,7 +147,7 @@ export function TargetForm({
           spellCheck={false}
           className="font-mono text-xs"
           defaultValue={v.body_template ?? defaults.body_template}
-          disabled={pending}
+          disabled={locked}
         />
       </Field>
 
@@ -162,22 +166,24 @@ export function TargetForm({
       </details>
 
       <label className="flex items-center gap-3 text-sm">
-        <Switch name="enabled" checked={enabled} onCheckedChange={setEnabled} disabled={pending} />
+        <Switch name="enabled" checked={enabled} onCheckedChange={setEnabled} disabled={locked} />
         <span>
           <span className="font-medium">Enabled.</span>{" "}
           <span className="text-muted-foreground">When off, links to this page stop working.</span>
         </span>
       </label>
 
-      <div className="flex gap-2">
-        <Button type="submit" disabled={pending || connections.length === 0}>
-          {pending && <Loader2 className="animate-spin" />}
-          {target ? "Save changes" : "Create capture page"}
-        </Button>
-        <Button variant="ghost" render={<Link href="/capture" />} nativeButton={false}>
-          Cancel
-        </Button>
-      </div>
+      {!readOnly && (
+        <div className="flex gap-2">
+          <Button type="submit" disabled={pending || connections.length === 0}>
+            {pending && <Loader2 className="animate-spin" />}
+            {target ? "Save changes" : "Create capture page"}
+          </Button>
+          <Button variant="ghost" render={<Link href="/capture" />} nativeButton={false}>
+            Cancel
+          </Button>
+        </div>
+      )}
     </form>
   );
 }

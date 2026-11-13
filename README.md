@@ -83,6 +83,8 @@ The database schema is created and upgraded automatically when the backend start
 - **Forgot password (`/forgot-password`)** emails a reset link that works once, for 1 hour. Resetting signs the user out everywhere else.
 - **Emails:** with `EMAIL_BACKEND=console` (the default) nothing is sent; each email, including its link, is printed in the backend log. To send for real, verify a domain at [Resend](https://resend.com) and set `EMAIL_BACKEND=resend`, `RESEND_API_KEY` and `EMAIL_FROM` (an address on that domain). `APP_URL` must be the frontend's public address, because the links in emails point there.
 
+- **Team (`/team`):** owners and admins invite people by email with a role. The invite link works once, for 7 days, and the person picks their name and password. Roles: **owner** (everything, including managing owners), **admin** (connections, capture pages and the team, but not owners), **member** (can look at everything but change nothing). An email that already has an AtroNexus account can't be invited yet: each account belongs to one organization.
+
 How a sign-in works:
 
 1. The login form posts to a Next.js server action, which calls `POST /api/auth/login` on the backend.

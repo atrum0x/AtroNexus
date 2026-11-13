@@ -3,8 +3,11 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { listCaptures, listCaptureTargets } from "@/api/generated/endpoints/capture/capture";
+import { ManageOnly } from "@/components/manage-only";
 import { EditButton, PageHeader, TableSkeleton } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
+import { getCurrentUser } from "@/lib/auth";
+import { canManage } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -25,10 +28,14 @@ export default function CapturePage() {
         title="Capture pages"
         description="Each one is a link that IFS opens from a custom command. The page reads the user's location, IP address and device, and writes them to IFS."
         action={
-          <Button render={<Link href="/capture/new" />} nativeButton={false}>
-            <Plus />
-            New capture page
-          </Button>
+          <Suspense fallback={null}>
+            <ManageOnly>
+              <Button render={<Link href="/capture/new" />} nativeButton={false}>
+                <Plus />
+                New capture page
+              </Button>
+            </ManageOnly>
+          </Suspense>
         }
       />
       <Suspense fallback={<TableSkeleton />}>
@@ -51,7 +58,8 @@ export default function CapturePage() {
 }
 
 async function TargetsTable() {
-  const targets = await listCaptureTargets();
+  const [targets, user] = await Promise.all([listCaptureTargets(), getCurrentUser()]);
+  const manager = canManage(user);
 
   if (targets.length === 0) {
     return (
@@ -97,7 +105,7 @@ async function TargetsTable() {
                 {t.enabled ? <Badge variant="secondary">On</Badge> : <Badge variant="outline">Off</Badge>}
               </TableCell>
               <TableCell className="text-right">
-                <EditButton href={`/capture/${t.id}`} label={`Edit ${t.name}`} />
+                {manager && <EditButton href={`/capture/${t.id}`} label={`Edit ${t.name}`} />}
               </TableCell>
             </TableRow>
           ))}
