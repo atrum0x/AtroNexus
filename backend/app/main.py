@@ -3,16 +3,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
-from sqlalchemy import select
 
-from app import auth
+from app import auth, migrate
+from app.accounts import seed_platform_admin
 from app.capture import router as capture
 from app.config import get_settings
 from app.ifs import router as ifs
+from app.db import SessionLocal
 from app.internal import InternalKeyMiddleware
-from app.db import Base, SessionLocal, engine
-from app.models import User
-from app.security import hash_password
 
 
 def seed_admin() -> None:
@@ -20,20 +18,12 @@ def seed_admin() -> None:
     if not settings.admin_username or not settings.admin_password:
         return
     with SessionLocal() as db:
-        exists = db.scalar(select(User).where(User.username == settings.admin_username))
-        if exists is None:
-            db.add(
-                User(
-                    username=settings.admin_username,
-                    password_hash=hash_password(settings.admin_password),
-                )
-            )
-            db.commit()
+        seed_platform_admin(db, settings.admin_username, settings.admin_password)
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    Base.metadata.create_all(engine)
+    migrate.upgrade()
     seed_admin()
     yield
 

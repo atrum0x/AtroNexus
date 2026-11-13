@@ -56,8 +56,13 @@ To add a user or reset a password:
 
 ```powershell
 cd backend
-uv run python -m app.cli create-user <username>
+uv run python -m app.cli create-user <username>                      # joins the AtroNexus organization
+uv run python -m app.cli create-user <username> --org "Customer Ltd"  # joins (or creates) a customer organization
 ```
+
+Each customer is an organization and sees only its own connections, capture pages and captures. The admin user from `.env` belongs to the "AtroNexus" organization and is the platform admin.
+
+The database schema is created and upgraded automatically when the backend starts (Alembic, `backend/migrations/`). An existing database from before organizations existed is upgraded in place: its users, connections and capture pages move into the "AtroNexus" organization.
 
 ## Other commands
 

@@ -1,11 +1,20 @@
-"""Create a user or reset their password: uv run python -m app.cli create-user <username>"""
+"""Create a user or reset their password.
+
+    uv run python -m app.cli create-user <username> [--org "Company name"] [--platform-admin]
+
+A new user joins the organization with that name, which is created if it
+doesn't exist (default: the platform's own organization). For an existing
+user only the password changes.
+"""
 
 import argparse
 import getpass
 
 from sqlalchemy import select
 
-from app.db import Base, SessionLocal, engine
+from app import migrate
+from app.accounts import PLATFORM_ORG_NAME, get_or_create_org
+from app.db import SessionLocal
 from app.models import User
 from app.security import hash_password
 
@@ -15,6 +24,8 @@ def main() -> None:
     sub = parser.add_subparsers(dest="command", required=True)
     create = sub.add_parser("create-user", help="Create a user or reset their password")
     create.add_argument("username")
+    create.add_argument("--org", default=PLATFORM_ORG_NAME, help="Organization name for a new user")
+    create.add_argument("--platform-admin", action="store_true", help="Make a new user a platform admin")
     args = parser.parse_args()
 
     password = getpass.getpass("Password: ")
@@ -23,12 +34,21 @@ def main() -> None:
     if password != getpass.getpass("Repeat password: "):
         raise SystemExit("Passwords don't match")
 
-    Base.metadata.create_all(engine)
+    migrate.upgrade()
     with SessionLocal() as db:
         user = db.scalar(select(User).where(User.username == args.username))
         if user is None:
-            db.add(User(username=args.username, password_hash=hash_password(password)))
-            print(f"Created user {args.username}")
+            org = get_or_create_org(db, args.org)
+            db.add(
+                User(
+                    organization=org,
+                    username=args.username,
+                    password_hash=hash_password(password),
+                    role="owner",
+                    is_platform_admin=args.platform_admin,
+                )
+            )
+            print(f"Created user {args.username} in {org.name}")
         else:
             user.password_hash = hash_password(password)
             print(f"Reset password for {args.username}")

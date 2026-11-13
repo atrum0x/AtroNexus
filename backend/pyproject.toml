@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "AtroNexus API"
 requires-python = ">=3.11"
 dependencies = [
+    "alembic>=1.20.1",
     "cryptography>=50.0.2",
     "fastapi>=0.162.5",
     "httpx>=0.28.1",

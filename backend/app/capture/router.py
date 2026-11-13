@@ -16,9 +16,10 @@ from app.capture.schemas import (
     CaptureTargetOut,
 )
 from app.capture.template import DEFAULT_BODY_TEMPLATE, DEFAULT_ENDPOINT_PATH, PLACEHOLDERS
-from app.deps import DbSession, get_current_user
+from app.deps import DbSession, OrgId, get_current_user
 from app.ifs.client import IfsClient, IfsError
-from app.ifs.models import IfsConnection
+from app.ifs.router import get_org_connection
+from app.models import ORG_ACTIVE
 from app.ifs.schemas import CheckResult
 from app.internal import client_ip
 
@@ -69,15 +70,17 @@ def _capture_out(c: Capture) -> CaptureOut:
     )
 
 
-def _get_target(db: DbSession, target_id: int) -> CaptureTarget:
+def _get_target(db: DbSession, org_id: int, target_id: int) -> CaptureTarget:
     target = db.get(CaptureTarget, target_id)
-    if target is None:
+    if target is None or target.organization_id != org_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Capture page not found")
     return target
 
 
-def _apply(db: DbSession, target: CaptureTarget, body: CaptureTargetIn) -> None:
-    connection = db.get(IfsConnection, body.connection_id)
+def _apply(db: DbSession, org_id: int, target: CaptureTarget, body: CaptureTargetIn) -> None:
+    # Only this organization's connections: another customer's would mean
+    # writing to their IFS with their service user.
+    connection = get_org_connection(db, org_id, body.connection_id)
     if connection is None:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Pick an existing IFS connection.")
     target.name = body.name.strip()
@@ -99,36 +102,42 @@ def get_capture_defaults() -> CaptureDefaults:
 
 
 @router.get("/targets", response_model=list[CaptureTargetOut])
-def list_capture_targets(db: DbSession) -> list[CaptureTargetOut]:
-    rows = db.scalars(select(CaptureTarget).order_by(CaptureTarget.name)).all()
+def list_capture_targets(db: DbSession, org_id: OrgId) -> list[CaptureTargetOut]:
+    rows = db.scalars(
+        select(CaptureTarget)
+        .where(CaptureTarget.organization_id == org_id)
+        .order_by(CaptureTarget.name)
+    ).all()
     return [_target_out(t) for t in rows]
 
 
 @router.post("/targets", response_model=CaptureTargetOut, status_code=status.HTTP_201_CREATED)
-def create_capture_target(body: CaptureTargetIn, db: DbSession) -> CaptureTargetOut:
-    target = CaptureTarget()
-    _apply(db, target, body)
+def create_capture_target(body: CaptureTargetIn, db: DbSession, org_id: OrgId) -> CaptureTargetOut:
+    target = CaptureTarget(organization_id=org_id)
+    _apply(db, org_id, target, body)
     db.add(target)
     db.commit()
     return _target_out(target)
 
 
 @router.get("/targets/{target_id}", response_model=CaptureTargetOut)
-def get_capture_target(target_id: int, db: DbSession) -> CaptureTargetOut:
-    return _target_out(_get_target(db, target_id))
+def get_capture_target(target_id: int, db: DbSession, org_id: OrgId) -> CaptureTargetOut:
+    return _target_out(_get_target(db, org_id, target_id))
 
 
 @router.put("/targets/{target_id}", response_model=CaptureTargetOut)
-def update_capture_target(target_id: int, body: CaptureTargetIn, db: DbSession) -> CaptureTargetOut:
-    target = _get_target(db, target_id)
-    _apply(db, target, body)
+def update_capture_target(
+    target_id: int, body: CaptureTargetIn, db: DbSession, org_id: OrgId
+) -> CaptureTargetOut:
+    target = _get_target(db, org_id, target_id)
+    _apply(db, org_id, target, body)
     db.commit()
     return _target_out(target)
 
 
 @router.delete("/targets/{target_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_capture_target(target_id: int, db: DbSession) -> None:
-    target = _get_target(db, target_id)
+def delete_capture_target(target_id: int, db: DbSession, org_id: OrgId) -> None:
+    target = _get_target(db, org_id, target_id)
     used = db.scalar(select(func.count()).select_from(Capture).where(Capture.target_id == target.id))
     if used:
         raise HTTPException(
@@ -140,9 +149,9 @@ def delete_capture_target(target_id: int, db: DbSession) -> None:
 
 
 @router.post("/targets/{target_id}/test", response_model=CheckResult)
-def test_capture_target(target_id: int, db: DbSession) -> CheckResult:
+def test_capture_target(target_id: int, db: DbSession, org_id: OrgId) -> CheckResult:
     """Signs in and reads the projection's service root, without writing anything."""
-    target = _get_target(db, target_id)
+    target = _get_target(db, org_id, target_id)
     path = target.endpoint_path
     marker = path.find(".svc")
     service_root = path[: marker + len(".svc")] + "/" if marker != -1 else None
@@ -165,10 +174,17 @@ def test_capture_target(target_id: int, db: DbSession) -> CheckResult:
 @router.get("/captures", response_model=list[CaptureOut])
 def list_captures(
     db: DbSession,
+    org_id: OrgId,
     target_id: int | None = None,
     limit: Annotated[int, Query(ge=1, le=500)] = 100,
 ) -> list[CaptureOut]:
-    query = select(Capture).order_by(Capture.captured_at.desc()).limit(limit)
+    query = (
+        select(Capture)
+        .join(Capture.target)
+        .where(CaptureTarget.organization_id == org_id)
+        .order_by(Capture.captured_at.desc())
+        .limit(limit)
+    )
     if target_id is not None:
         query = query.where(Capture.target_id == target_id)
     return [_capture_out(c) for c in db.scalars(query).all()]
@@ -184,7 +200,7 @@ RequestId = Annotated[str, Path(pattern=REQUEST_ID_PATTERN)]
 
 def _public_target(db: DbSession, public_id: str) -> CaptureTarget:
     target = db.scalar(select(CaptureTarget).where(CaptureTarget.public_id == public_id))
-    if target is None or not target.enabled:
+    if target is None or not target.enabled or target.organization.status != ORG_ACTIVE:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "This capture link isn't valid.")
     return target
 

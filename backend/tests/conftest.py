@@ -11,20 +11,53 @@ os.environ["ENCRYPTION_KEY"] = "pXoiNs7zDJ7z0Xk1Ksj0uHnU7pVYxCw8H9C0y2Hx0wM="
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
+from sqlalchemy import text  # noqa: E402
 
-from app.db import Base, engine  # noqa: E402
+import app.models_registry  # noqa: E402, F401
+from app.accounts import get_or_create_org  # noqa: E402
+from app.db import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
+from app.models import User  # noqa: E402
+from app.security import hash_password  # noqa: E402
+
+
+def reset_database() -> None:
+    # Alembic's own table isn't in the models, so drop it too; otherwise the
+    # next start would think the (now empty) database is already up to date.
+    Base.metadata.drop_all(engine)
+    with engine.begin() as conn:
+        conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
 
 
 @pytest.fixture
 def client():
-    Base.metadata.drop_all(engine)
+    # Starting the app runs the migrations and seeds the admin, like production.
+    reset_database()
     with TestClient(app) as c:
         yield c
-    Base.metadata.drop_all(engine)
+    reset_database()
+
+
+def login_headers(client, username: str, password: str) -> dict[str, str]:
+    res = client.post("/api/auth/login", json={"username": username, "password": password})
+    assert res.status_code == 200, res.text
+    return {"Authorization": f"Bearer {res.json()['access_token']}"}
 
 
 @pytest.fixture
 def auth_headers(client):
-    res = client.post("/api/auth/login", json={"username": "admin", "password": "admin123"})
-    return {"Authorization": f"Bearer {res.json()['access_token']}"}
+    return login_headers(client, "admin", "admin123")
+
+
+def add_user(username: str, org_name: str, password: str = "pass1234", **fields) -> None:
+    with SessionLocal() as db:
+        org = get_or_create_org(db, org_name)
+        db.add(User(organization=org, username=username, password_hash=hash_password(password), **fields))
+        db.commit()
+
+
+@pytest.fixture
+def other_org_headers(client):
+    """Signed in as the owner of a second, unrelated customer organization."""
+    add_user("bob", "Other Co", role="owner")
+    return login_headers(client, "bob", "pass1234")
