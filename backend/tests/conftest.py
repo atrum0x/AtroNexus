@@ -41,9 +41,10 @@ def fake_dns(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def reset_rate_limits():
+    from app.approvals.router import LIMITERS as APPROVAL_LIMITERS
     from app.capture.router import LIMITERS
 
-    for limiter in LIMITERS:
+    for limiter in (*LIMITERS, *APPROVAL_LIMITERS):
         limiter.reset()
     yield
 

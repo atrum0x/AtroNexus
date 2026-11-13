@@ -1,0 +1,77 @@
+-----------------------------------------------------------------------------
+--
+--  Logical unit: CAtxApprovalHandling
+--  Component:    PURCH
+--
+--  IFS Developer Studio Template Version 3.0
+--
+--  Thin layer over C_Atx_Approval_Util_API, which does the token checks,
+--  impersonation and the standard authorization logic.
+--
+--  Date    Sign       History
+--  ------  ---------  ---------------------------------------------------------
+--  261114  AtroNexus  Created.
+-----------------------------------------------------------------------------
+
+layer Cust;
+
+FUNCTION Get_Pr_Line_Status___ (
+   requisition_no_ IN VARCHAR2,
+   line_no_        IN VARCHAR2,
+   release_no_     IN VARCHAR2,
+   sequence_no_    IN NUMBER,
+   fnd_user_       IN VARCHAR2,
+   issued_at_      IN NUMBER,
+   token_          IN VARCHAR2 ) RETURN CLOB
+IS
+BEGIN
+   RETURN C_Atx_Approval_Util_API.Get_Pr_Line_Status(requisition_no_, line_no_, release_no_, sequence_no_,
+                                                    fnd_user_, issued_at_, token_);
+END Get_Pr_Line_Status___;
+
+
+FUNCTION Get_Reject_Reasons___ (
+   requisition_no_ IN VARCHAR2,
+   line_no_        IN VARCHAR2,
+   release_no_     IN VARCHAR2,
+   sequence_no_    IN NUMBER,
+   fnd_user_       IN VARCHAR2,
+   issued_at_      IN NUMBER,
+   token_          IN VARCHAR2 ) RETURN CLOB
+IS
+BEGIN
+   RETURN C_Atx_Approval_Util_API.Get_Reject_Reasons(requisition_no_, line_no_, release_no_, sequence_no_,
+                                                    fnd_user_, issued_at_, token_);
+END Get_Reject_Reasons___;
+
+
+FUNCTION Approve_Pr_Line___ (
+   requisition_no_ IN VARCHAR2,
+   line_no_        IN VARCHAR2,
+   release_no_     IN VARCHAR2,
+   sequence_no_    IN NUMBER,
+   fnd_user_       IN VARCHAR2,
+   issued_at_      IN NUMBER,
+   token_          IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   RETURN C_Atx_Approval_Util_API.Approve_Pr_Line(requisition_no_, line_no_, release_no_, sequence_no_,
+                                                 fnd_user_, issued_at_, token_);
+END Approve_Pr_Line___;
+
+
+FUNCTION Reject_Pr_Line___ (
+   requisition_no_   IN VARCHAR2,
+   line_no_          IN VARCHAR2,
+   release_no_       IN VARCHAR2,
+   sequence_no_      IN NUMBER,
+   fnd_user_         IN VARCHAR2,
+   issued_at_        IN NUMBER,
+   token_            IN VARCHAR2,
+   reject_reason_id_ IN VARCHAR2,
+   reject_note_      IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   RETURN C_Atx_Approval_Util_API.Reject_Pr_Line(requisition_no_, line_no_, release_no_, sequence_no_,
+                                                fnd_user_, issued_at_, token_, reject_reason_id_, reject_note_);
+END Reject_Pr_Line___;

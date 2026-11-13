@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Built: login, the IFS connector (shared building block), tool 1 (the capture page), and SaaS steps 1 (organizations and data separation), 2 (self-service sign-up, email sign-in, email verification, password reset), 3 (team invites and roles), 4 (per-tool switches), 5 (usage counting and the overview dashboard) and 6 (platform admin), and the SSRF guard from step 7. Still open from step 7: rate limits and a sign-up CAPTCHA. No payments yet; pricing will be a monthly fee per tool, plus usage where a tool needs it. The design document `IFS Cloud Gap-Bridge Platform Tool Descriptions.md` is the source of truth for what gets built.
+Built: login, the IFS connector (shared building block), tool 1 (the capture page), tool 3 (approvals from email, purchase requisition lines; see below), the secure-links building block, and SaaS steps 1 (organizations and data separation), 2 (self-service sign-up, email sign-in, email verification, password reset), 3 (team invites and roles), 4 (per-tool switches), 5 (usage counting and the overview dashboard) and 6 (platform admin), and the SSRF guard from step 7. Still open from step 7: rate limits and a sign-up CAPTCHA. No payments yet; pricing will be a monthly fee per tool, plus usage where a tool needs it. The design document `IFS Cloud Gap-Bridge Platform Tool Descriptions.md` is the source of truth for what gets built.
 
 ## Stack and commands
 
@@ -83,6 +83,12 @@ TLS is verified against the OS trust store (`truststore`), not certifi. Keep it 
 - **New link** (`POST /api/capture/targets/{id}/new-link`, owners and admins): a new random `public_id`, so every old link stops working at once; the IFS custom command must then be updated. Links are still shared per capture page, not per request; per-request one-time links are planned with the secure-links building block.
 
 This repo sits inside `C:\_PERSONAL\agrum`, whose `CLAUDE.md` is also loaded. That file describes the separate Agrum projects (`agrum_be`, `agrum_fe`, `agrum_mobile`), not AtroNexus. Its rules don't apply here unless AtroNexus decides to reuse that stack.
+
+## Tool 3: approvals from email (`backend/app/approvals/`, `frontend/src/app/a/`, `ifs/approvals/`)
+
+Two halves:
+- **IFS package** (`ifs/approvals/`, customer builds and deploys it; see its README): `C_Atx_Approval_Util_API` + projection `CAtxApprovalHandling` (component PURCH, layer Cust, no tables), an event action on the standard event `PUR_REQ_LINE_TO_BE_AUTHORIZED`, and an IFS Connect routing rule/address. IFS signs a token per step and person with HMAC-SHA256 (secret in the object property `CAtxApproval / * / HMAC_SECRET`, which AtroNexus never sees), posts the request to AtroNexus, and on Approve/Reject checks the token, **impersonates the approver** (`Fnd_Session_Util_API.Impersonate_Fnd_User_`, needs the service user's `IMPERSONATE USER` privilege) and runs the standard `Check_Authorizer` + `Authorize__` / `Update_Rejection_Details__`. So IFS records the real approver with their own limits. The PL/SQL was written against the 25.1 core in `C:\_WORK\Core files` and hasn't been compiled here.
+- **AtroNexus**: IFS posts to `/api/hooks/ifs/approvals` on the **frontend** (`src/app/api/hooks/ifs/approvals/route.ts` forwards it with the internal key) with `Authorization: Bearer <hook key>`; the key's hash identifies the organization (`ApprovalSetup`). Each approver gets an `ApprovalRequest` (IFS token stored encrypted, only passed back) and a **secure link** (`app/links/`: hashed one-time token, expiry, revocable). The public page `/a/<token>` reads the line live from IFS; deciding is a deliberate button press (opening a link never acts, because email scanners open links). A decision closes the other approvers' links for that step and counts as usage (`approvals.decided`). If IFS refuses (e.g. over the approver's limit) the link stays usable and the error is logged. Admin page `/approvals`: setup steps, hook key (shown once), connection, link lifetime, a package check, and the request log.
 
 ## What the platform is
 

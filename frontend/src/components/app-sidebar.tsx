@@ -4,6 +4,7 @@ import {
   Blocks,
   Building2,
   ChevronsUpDown,
+  ClipboardCheck,
   LayoutDashboard,
   LogOut,
   MapPin,
@@ -62,6 +63,9 @@ function sections(data: SidebarData): { label?: string; items: NavItem[] }[] {
   const tools: NavItem[] = [];
   if (data.enabledTools.includes("capture")) {
     tools.push({ href: "/capture", label: "Capture pages", icon: MapPin });
+  }
+  if (data.enabledTools.includes("approvals")) {
+    tools.push({ href: "/approvals", label: "Approvals", icon: ClipboardCheck });
   }
   tools.push({ href: "/tools", label: "All tools", icon: Blocks });
 

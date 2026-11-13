@@ -7,13 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth";
 import { canManage } from "@/lib/roles";
-import { CAPTURE, formatPrice, getTools } from "@/lib/tools";
+import { APPROVALS, CAPTURE, formatPrice, getTools } from "@/lib/tools";
 
 import { ToolSwitch } from "./tool-switch";
 
 // Where each built tool is set up once it's on.
 const SETUP_LINKS: Record<string, { href: string; label: string }> = {
   [CAPTURE]: { href: "/capture", label: "Set up capture pages" },
+  [APPROVALS]: { href: "/approvals", label: "Set up approvals" },
 };
 
 export default function ToolsPage() {

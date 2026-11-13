@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 
 from app import auth, migrate
+from app.approvals import router as approvals
 from app.accounts import seed_platform_admin
 from app.capture import router as capture
 from app.config import get_settings
@@ -59,6 +60,9 @@ app.include_router(team.public_router)
 app.include_router(tools.router)
 app.include_router(usage.router)
 app.include_router(platform.router)
+app.include_router(approvals.router)
+app.include_router(approvals.hook_router)
+app.include_router(approvals.public_router)
 
 
 @app.get("/api/health", tags=["meta"])

@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 CAPTURE = "capture"
+APPROVALS = "approvals"
 
 
 @dataclass(frozen=True)
@@ -42,10 +43,11 @@ TOOLS: tuple[Tool, ...] = (
         usage_unit="message",
     ),
     Tool(
-        "approvals",
-        "Approve from email or chat",
-        "Approve or reject IFS requests with one click from an email or chat message, without signing in to IFS.",
+        APPROVALS,
+        "Approve from email",
+        "Approvers get an email and approve or reject purchase requisition lines without signing in to IFS. IFS still records the real approver. Needs the AtroNexus IFS package.",
         Decimal("39"),
+        available=True,
     ),
     Tool(
         "email_in",

@@ -10,9 +10,10 @@ import { SESSION_COOKIE } from "@/lib/session-cookie";
 const SIGNED_OUT_ONLY = ["/login", "/signup", "/forgot-password"];
 // Open to everyone, signed in or not.
 // - /c/: capture links, opened by IFS users who don't have an AtroNexus account.
+// - /a/: approval links from emails, for approvers without an AtroNexus account.
 // - /verify-email, /reset-password, /invite: links from emails, which may be opened in
 //   a browser that is (or isn't) signed in.
-const OPEN_PREFIXES = ["/c/", "/verify-email", "/reset-password", "/invite"];
+const OPEN_PREFIXES = ["/c/", "/a/", "/verify-email", "/reset-password", "/invite"];
 
 export function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;

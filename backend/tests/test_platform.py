@@ -58,7 +58,11 @@ def test_overview_lists_every_organization_with_numbers(client, auth_headers, ot
     s = data["summary"]
     assert (s["organizations"], s["active"], s["suspended"], s["users"]) == (2, 2, 0, 3)
     assert (s["usage_succeeded"], s["usage_failed"]) == (1, 1)
-    assert Decimal(s["estimated_revenue"]) == Decimal("58")  # both have the capture page on
+    # The platform org has every available tool on; Other Co only the capture page.
+    from app.tools.catalog import BY_CODE, TOOLS
+
+    platform_fees = sum((t.monthly_price for t in TOOLS if t.available), Decimal(0))
+    assert Decimal(s["estimated_revenue"]) == platform_fees + BY_CODE["capture"].monthly_price
 
 
 def test_detail_shows_members_tools_history_and_errors(client, auth_headers, other_org_headers, fake_ifs):

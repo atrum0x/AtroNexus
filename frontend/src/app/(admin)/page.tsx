@@ -103,6 +103,12 @@ function Checklist({ items }: { items: ChecklistItem[] }) {
   );
 }
 
+// What one billable use is, per tool.
+const USAGE_WORDS: Record<string, string> = {
+  capture: "sent to IFS",
+  approvals: "decisions recorded in IFS",
+};
+
 function UsageCard({ usage }: { usage: ToolUsageOut }) {
   const change = usage.succeeded - usage.last_month_succeeded;
   return (
@@ -115,7 +121,7 @@ function UsageCard({ usage }: { usage: ToolUsageOut }) {
         <CardTitle className="text-3xl tabular-nums">{usage.succeeded.toLocaleString("en-US")}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-0.5 text-sm text-muted-foreground">
-        <span>sent to IFS this month</span>
+        <span>{USAGE_WORDS[usage.tool] ?? "uses"} this month</span>
         {usage.failed > 0 && (
           <span className="text-destructive">{usage.failed.toLocaleString("en-US")} failed</span>
         )}

@@ -36,6 +36,7 @@ Only the Vercel frontend can call the backend: every request must carry the shar
 | 17 | Light/dark mode, sharper headings, capture page polish | PR #10 |
 | 18 | Custom domain atrum0x.com, real email through Resend | settings only |
 | 19 | Capture links: rate limits and a New link button | PR #11 |
+| 20 | Tool 3: approvals from email (purchase requisition lines) + IFS package | PR #12 |
 
 ## 1. Foundations
 
@@ -166,6 +167,21 @@ The plan: customers sign up themselves, each company has its own space and dashb
 - **Keep the `atronexus` DNS record "DNS only" (grey cloud) in Cloudflare.** Proxied through Cloudflare, Vercel would see Cloudflare's IP instead of the visitor's, and the capture page would save the wrong IP.
 - **Capture links (PR #11):** rate limits on the public capture endpoints (opening: 60/min per visitor; submitting: 10/min and 60/hour per visitor, 300/hour per capture page in total), a friendly "Too many attempts" page, and a **New link** button on each capture page that changes its address so every old link stops working (then update the IFS custom command).
 - **Still open for capture links:** links are shared per capture page, so one leaked link works for any request ID until renewed. The proper fix is one-time links per request (IFS asks AtroNexus for a link when it creates the request), planned with the secure-links building block for the approvals tool. Optional extra: only accept a capture while the IFS record's status still says it's waiting for one (PATCH targets only).
+
+## 8. Tool 3: approvals from email (PR #12)
+
+**Research behind it** (your DSS and tea_int work, the 25.1 core files):
+- IFS → AtroNexus uses the pattern from the GRN status integration: event action → PL/SQL → `Plsqlap_Server_API.Post_Outbound_Message` → routing rule → REST routing address (Bearer auth, as in the Dialog SMS integration).
+- IFS ships the event `PUR_REQ_LINE_TO_BE_AUTHORIZED` (also used by Notify Me) with the approver and line details.
+- IFS decides who's approving from the logged-in user (`Check_Authorizer`, `Validate_Auth_Limits`), so the service user can't approve for someone. `Fnd_Session_Util_API.Impersonate_Fnd_User_` (system privilege `IMPERSONATE USER`) lets the package run IFS's own authorize and reject as the real person.
+- Security checkpoint `PURCH_REQ_AUTHORIZATION` is off on your environment (and by default).
+
+**What was built:**
+- **IFS package** `ifs/approvals/` (code delivery, no tables): utility + projection `CAtxApprovalHandling`, an event action, routing rule and address, and a README with installation steps and the JSON contract. Tokens are HMAC-SHA256 with a secret only IFS knows, so AtroNexus can only act on approvals IFS asked for, as the person IFS named, within their limits.
+- **Secure links** (building block): hashed one-time tokens, expiry, revoke, open/used tracking.
+- **AtroNexus**: the hook (through the frontend, Bearer key), approval emails, the public approval page `/a/<token>` (live line from IFS, Approve with a confirm, Reject with IFS reject reasons and a note), the admin page `/approvals` (setup, hook key shown once, IFS package check, request log), usage counting, and the "Approve from email" tool switched on as available.
+
+**Still to do before real use:** build and deploy the IFS package on a test environment (the PL/SQL hasn't been compiled yet), grant the service user `IMPERSONATE USER`, and run one real requisition line end to end. Then purchase orders and change orders (same pattern), reminders, and a code for high-value approvals.
 
 ## Environment variables
 
