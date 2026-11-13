@@ -5,3 +5,4 @@ export * from './ifs-connections/ifs-connections';
 export * from './meta/meta';
 export * from './team/team';
 export * from './team-public/team-public';
+export * from './tools/tools';

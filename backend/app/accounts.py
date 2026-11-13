@@ -69,8 +69,16 @@ def seed_platform_admin(
     """Creates the platform admin on first start, and gives them ADMIN_EMAIL if they have none."""
     user = db.scalar(select(User).where(User.username == username))
     if user is None:
+        org = get_or_create_org(db, PLATFORM_ORG_NAME)
+        # The platform's own organization gets every tool that exists.
+        from app.tools.catalog import TOOLS
+        from app.tools.service import set_enabled
+
+        for tool in TOOLS:
+            if tool.available:
+                set_enabled(db, org.id, tool.code, True, None)
         user = User(
-            organization=get_or_create_org(db, PLATFORM_ORG_NAME),
+            organization=org,
             username=username,
             password_hash=hash_password(password),
             role="owner",

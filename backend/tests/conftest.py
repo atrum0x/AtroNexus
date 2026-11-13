@@ -22,6 +22,7 @@ from app.email.sender import outbox  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import User  # noqa: E402
 from app.security import hash_password  # noqa: E402
+from app.tools.service import set_enabled  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -63,6 +64,8 @@ def add_user(username: str, org_name: str, password: str = "pass1234", **fields)
     fields.setdefault("email_verified_at", datetime.now(timezone.utc))
     with SessionLocal() as db:
         org = get_or_create_org(db, org_name)
+        # Test organizations use the capture page; tool tests switch it off themselves.
+        set_enabled(db, org.id, "capture", True, None)
         db.add(User(organization=org, username=username, password_hash=hash_password(password), **fields))
         db.commit()
 
