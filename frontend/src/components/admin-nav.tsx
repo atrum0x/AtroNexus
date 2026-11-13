@@ -5,22 +5,27 @@ import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 
+// `tool`: shown only while the organization has that tool switched on.
 const LINKS = [
   { href: "/", label: "Home", exact: true },
-  { href: "/capture", label: "Capture pages", exact: false },
+  { href: "/capture", label: "Capture pages", exact: false, tool: "capture" },
   { href: "/connections", label: "IFS connections", exact: false },
   { href: "/team", label: "Team", exact: false },
+  { href: "/tools", label: "Tools", exact: false },
 ];
 
-/** Reads the URL, so render it inside <Suspense> with <NavLinks /> as the fallback. */
-export function AdminNav() {
-  return <NavLinks pathname={usePathname()} />;
+/**
+ * Reads the URL, so render it inside <Suspense> with <NavLinks /> as the
+ * fallback. `enabledTools` comes from the server (see ToolAwareNav).
+ */
+export function AdminNav({ enabledTools }: { enabledTools: string[] }) {
+  return <NavLinks pathname={usePathname()} enabledTools={enabledTools} />;
 }
 
-export function NavLinks({ pathname }: { pathname?: string }) {
+export function NavLinks({ pathname, enabledTools = [] }: { pathname?: string; enabledTools?: string[] }) {
   return (
-    <nav className="flex items-center gap-1 text-sm">
-      {LINKS.map((link) => {
+    <nav className="flex items-center gap-1 overflow-x-auto text-sm">
+      {LINKS.filter((link) => !link.tool || enabledTools.includes(link.tool)).map((link) => {
         const active =
           pathname !== undefined &&
           (link.exact ? pathname === link.href : pathname.startsWith(link.href));
@@ -29,7 +34,7 @@ export function NavLinks({ pathname }: { pathname?: string }) {
             key={link.href}
             href={link.href}
             className={cn(
-              "rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:text-foreground",
+              "shrink-0 rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:text-foreground",
               active && "bg-muted text-foreground",
             )}
           >

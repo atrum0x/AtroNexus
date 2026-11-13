@@ -85,6 +85,8 @@ The database schema is created and upgraded automatically when the backend start
 
 - **Team (`/team`):** owners and admins invite people by email with a role. The invite link works once, for 7 days, and the person picks their name and password. Roles: **owner** (everything, including managing owners), **admin** (connections, capture pages and the team, but not owners), **member** (can look at everything but change nothing). An email that already has an AtroNexus account can't be invited yet: each account belongs to one organization.
 
+- **Tools (`/tools`):** each organization switches on the tools it uses; owners and admins switch, members can only look. Prices shown are placeholders and nothing is charged yet. A tool that's off disappears from the menu, its admin pages say it's off, and its public links (e.g. capture links) stop working; its settings and history are kept. New sign-ups start with no tools.
+
 How a sign-in works:
 
 1. The login form posts to a Next.js server action, which calls `POST /api/auth/login` on the backend.

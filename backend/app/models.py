@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String
+from sqlalchemy import Boolean, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base, UtcDateTime
@@ -103,3 +103,33 @@ class Invitation(Base):
 
     organization: Mapped[Organization] = relationship(lazy="joined")
     invited_by: Mapped[User | None] = relationship(lazy="joined")
+
+
+class OrganizationTool(Base):
+    """Whether an organization has a tool switched on (one row per organization and tool)."""
+
+    __tablename__ = "organization_tools"
+    __table_args__ = (UniqueConstraint("organization_id", "tool", name="uq_organization_tools_org_tool"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), index=True)
+    # A code from app.tools.catalog.
+    tool: Mapped[str] = mapped_column(String(40))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    # When it was last switched on. Billing reads tool_events for the full history.
+    enabled_at: Mapped[datetime | None] = mapped_column(UtcDateTime())
+    updated_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=_now, onupdate=_now)
+
+
+class ToolEvent(Base):
+    """Every time a tool is switched on or off: the history billing will be based on."""
+
+    __tablename__ = "tool_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), index=True)
+    tool: Mapped[str] = mapped_column(String(40))
+    enabled: Mapped[bool] = mapped_column(Boolean)
+    # Who switched it. Null when the user was later removed, or for system changes.
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=_now)

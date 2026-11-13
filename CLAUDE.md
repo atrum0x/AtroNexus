@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Built: login, the IFS connector (shared building block), tool 1 (the capture page), and SaaS steps 1 (organizations and data separation), 2 (self-service sign-up, email sign-in, email verification, password reset) and 3 (team invites and roles). Next SaaS steps: per-tool switches, usage metering, platform admin, hardening (SSRF guard for connection URLs, rate limits). No payments yet; pricing will be a monthly fee per tool, plus usage where a tool needs it. The design document `IFS Cloud Gap-Bridge Platform Tool Descriptions.md` is the source of truth for what gets built.
+Built: login, the IFS connector (shared building block), tool 1 (the capture page), and SaaS steps 1 (organizations and data separation), 2 (self-service sign-up, email sign-in, email verification, password reset) 3 (team invites and roles) and 4 (per-tool switches). Next SaaS steps: usage metering, platform admin, hardening (SSRF guard for connection URLs, rate limits). No payments yet; pricing will be a monthly fee per tool, plus usage where a tool needs it. The design document `IFS Cloud Gap-Bridge Platform Tool Descriptions.md` is the source of truth for what gets built.
 
 ## Stack and commands
 
@@ -39,6 +39,8 @@ Rules for every admin endpoint, including new tools:
 - Add a cross-organization test to `tests/test_organizations.py` (the `other_org_headers` fixture signs in to a second organization).
 
 Team (`app/team/`, frontend `/team`): owners and admins invite by email (`invitations` table, hashed one-time token, 7 days; a new invite to the same address revokes the old one; inviting needs a verified email). The public `/invite?token=` page creates the account in that organization with the invited role and a verified email. Rules in `app/team/service.py`: nobody changes or removes themselves, only owners touch owners or grant owner, an organization keeps at least one owner, and an email that already has an account can't be invited (one organization per account for now).
+
+Tools (`app/tools/`, frontend `/tools`): `catalog.py` lists the seven tools with **placeholder** prices (monthly, plus a per-use price for tools like messaging) and whether each is built. `organization_tools` holds each organization's on/off state, and every switch is logged in `tool_events` (who and when), which billing will read later. New sign-ups start with no tools; the seeded platform organization gets every available tool; organizations from before tools existed got capture on (migration `0005`). A tool's admin endpoints take `require_tool(CODE)` (403 while off) and its public endpoints answer 404 while off. In the frontend, `getTools()` / `isToolEnabled()` (`src/lib/tools.ts`) drive the menu (`ToolAwareNav`), the home tiles, and a section layout that shows "switched off" (see `capture/layout.tsx`). A new tool needs: a catalog entry with `available=True`, `require_tool` on its routers, a public-endpoint check, a menu link with `tool:`, and a section layout.
 
 A suspended organization (`status = "suspended"`) can't sign in (403), its tokens stop working, and its public links answer 404.
 

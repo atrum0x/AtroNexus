@@ -20,6 +20,8 @@ from app.deps import DbSession, ManagerOnly, OrgId, VerifiedEmail, get_current_u
 from app.ifs.client import IfsClient, IfsError
 from app.ifs.router import get_org_connection
 from app.models import ORG_ACTIVE
+from app.tools.catalog import CAPTURE
+from app.tools.service import is_enabled, require_tool
 from app.ifs.schemas import CheckResult
 from app.internal import client_ip
 
@@ -28,7 +30,8 @@ from app.internal import client_ip
 router = APIRouter(
     prefix="/api/capture",
     tags=["capture"],
-    dependencies=[Depends(get_current_user)],
+    # The tool check comes after sign-in, so a missing token still answers 401.
+    dependencies=[Depends(get_current_user), require_tool(CAPTURE)],
 )
 
 
@@ -200,7 +203,12 @@ RequestId = Annotated[str, Path(pattern=REQUEST_ID_PATTERN)]
 
 def _public_target(db: DbSession, public_id: str) -> CaptureTarget:
     target = db.scalar(select(CaptureTarget).where(CaptureTarget.public_id == public_id))
-    if target is None or not target.enabled or target.organization.status != ORG_ACTIVE:
+    if (
+        target is None
+        or not target.enabled
+        or target.organization.status != ORG_ACTIVE
+        or not is_enabled(db, target.organization_id, CAPTURE)
+    ):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "This capture link isn't valid.")
     return target
 

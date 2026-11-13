@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { AdminNav, NavLinks } from "@/components/admin-nav";
+import { NavLinks } from "@/components/admin-nav";
+import { ToolAwareNav } from "@/components/tool-aware-nav";
 import { Button } from "@/components/ui/button";
 import { VerifyEmailBanner } from "@/components/verify-email-banner";
 
@@ -16,7 +17,7 @@ export default function AdminLayout({ children }: LayoutProps<"/">) {
             AtroNexus
           </Link>
           <Suspense fallback={<NavLinks />}>
-            <AdminNav />
+            <ToolAwareNav />
           </Suspense>
           <form action={logout} className="ml-auto">
             <Button type="submit" variant="outline" size="sm">

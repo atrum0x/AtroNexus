@@ -43,6 +43,8 @@ export * from './roleChange';
 export * from './roleChangeRole';
 export * from './signupRequest';
 export * from './tokenResponse';
+export * from './toolOut';
+export * from './toolSwitch';
 export * from './userOut';
 export * from './validationError';
 export * from './validationErrorCtx';
