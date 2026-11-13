@@ -8,9 +8,9 @@
 export interface LoginRequest {
   /**
      * @minLength 1
-     * @maxLength 64
+     * @maxLength 254
      */
-  username: string;
+  email: string;
   /**
      * @minLength 1
      * @maxLength 256

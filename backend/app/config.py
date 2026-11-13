@@ -36,6 +36,25 @@ class Settings(BaseSettings):
     # Created on startup if no user with this username exists.
     admin_username: str | None = None
     admin_password: str | None = None
+    # Given to that admin user on startup if they have no email yet, so they
+    # can sign in with it and receive password resets.
+    admin_email: str | None = None
+
+    # The frontend's public address. Links in emails (verify, reset password)
+    # point here.
+    app_url: str = "http://localhost:3000"
+
+    # "console" writes emails to the log (local development, or until a sending
+    # domain is set up). "resend" sends them through Resend (resend.com).
+    email_backend: str = "console"
+    resend_api_key: str | None = None
+    # Must be an address on a domain verified in Resend.
+    email_from: str = "AtroNexus <no-reply@example.com>"
+
+    @field_validator("admin_email", "resend_api_key", mode="before")
+    @classmethod
+    def empty_is_none(cls, value: object) -> object:
+        return None if value == "" else value
 
 
 @lru_cache

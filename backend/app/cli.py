@@ -9,6 +9,7 @@ user only the password changes.
 
 import argparse
 import getpass
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 
@@ -46,6 +47,7 @@ def main() -> None:
                     password_hash=hash_password(password),
                     role="owner",
                     is_platform_admin=args.platform_admin,
+                    email_verified_at=datetime.now(timezone.utc),
                 )
             )
             print(f"Created user {args.username} in {org.name}")

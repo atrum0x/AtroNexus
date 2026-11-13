@@ -5,9 +5,14 @@
  * OpenAPI spec version: 0.1.0
  */
 import type {
+  ForgotPasswordRequest,
   LoginRequest,
+  MessageOut,
+  ResetPasswordRequest,
+  SignupRequest,
   TokenResponse,
-  UserOut
+  UserOut,
+  VerifyEmailRequest
 } from '../../models';
 
 import { apiFetch } from '../../../fetcher';
@@ -45,6 +50,178 @@ return apiFetch<TokenResponse>(getLoginUrl(),
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(loginRequest)
+  }
+);}
+
+
+export const getSignupUrl = () => {
+
+
+
+
+  return `/api/auth/signup`
+}
+
+/**
+ * Creates an organization and its owner, sends the verification email, and signs in.
+ * @summary Signup
+ */
+export const signup = async (signupRequest: SignupRequest, options?: Parameters<typeof apiFetch>[1]): Promise<TokenResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<TokenResponse>(getSignupUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(signupRequest)
+  }
+);}
+
+
+export const getVerifyEmailUrl = () => {
+
+
+
+
+  return `/api/auth/verify-email`
+}
+
+/**
+ * @summary Verify Email
+ */
+export const verifyEmail = async (verifyEmailRequest: VerifyEmailRequest, options?: Parameters<typeof apiFetch>[1]): Promise<MessageOut> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<MessageOut>(getVerifyEmailUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(verifyEmailRequest)
+  }
+);}
+
+
+export const getResendVerificationUrl = () => {
+
+
+
+
+  return `/api/auth/resend-verification`
+}
+
+/**
+ * @summary Resend Verification
+ */
+export const resendVerification = async ( options?: Parameters<typeof apiFetch>[1]): Promise<MessageOut> => {
+
+  return apiFetch<MessageOut>(getResendVerificationUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+export const getForgotPasswordUrl = () => {
+
+
+
+
+  return `/api/auth/forgot-password`
+}
+
+/**
+ * @summary Forgot Password
+ */
+export const forgotPassword = async (forgotPasswordRequest: ForgotPasswordRequest, options?: Parameters<typeof apiFetch>[1]): Promise<MessageOut> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<MessageOut>(getForgotPasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(forgotPasswordRequest)
+  }
+);}
+
+
+export const getResetPasswordUrl = () => {
+
+
+
+
+  return `/api/auth/reset-password`
+}
+
+/**
+ * @summary Reset Password
+ */
+export const resetPassword = async (resetPasswordRequest: ResetPasswordRequest, options?: Parameters<typeof apiFetch>[1]): Promise<MessageOut> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<MessageOut>(getResetPasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(resetPasswordRequest)
   }
 );}
 

@@ -1,5 +1,5 @@
 def login(client, username="admin", password="admin123"):
-    return client.post("/api/auth/login", json={"username": username, "password": password})
+    return client.post("/api/auth/login", json={"email": username, "password": password})
 
 
 def test_login_success_returns_token(client):
@@ -13,7 +13,7 @@ def test_login_success_returns_token(client):
 def test_login_wrong_password(client):
     res = login(client, password="nope")
     assert res.status_code == 401
-    assert res.json()["detail"] == "Invalid username or password"
+    assert res.json()["detail"] == "Invalid email or password"
 
 
 def test_login_unknown_user(client):

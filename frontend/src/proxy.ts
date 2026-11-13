@@ -7,10 +7,12 @@ import { SESSION_COOKIE } from "@/lib/session-cookie";
 // (see the mutator in api/fetcher.ts).
 
 // Signed-out only: signed-in users get sent home.
-const LOGIN = "/login";
-// Open to everyone, signed in or not. Capture links (/c/...) are opened by
-// IFS users who don't have an AtroNexus account.
-const OPEN_PREFIXES = ["/c/"];
+const SIGNED_OUT_ONLY = ["/login", "/signup", "/forgot-password"];
+// Open to everyone, signed in or not.
+// - /c/: capture links, opened by IFS users who don't have an AtroNexus account.
+// - /verify-email, /reset-password: links from emails, which may be opened in
+//   a browser that is (or isn't) signed in.
+const OPEN_PREFIXES = ["/c/", "/verify-email", "/reset-password"];
 
 export function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
@@ -19,10 +21,11 @@ export function proxy(req: NextRequest) {
   }
 
   const hasSession = req.cookies.has(SESSION_COOKIE);
-  if (!hasSession && path !== LOGIN) {
-    return NextResponse.redirect(new URL(LOGIN, req.nextUrl));
+  const signedOutPage = SIGNED_OUT_ONLY.includes(path);
+  if (!hasSession && !signedOutPage) {
+    return NextResponse.redirect(new URL("/login", req.nextUrl));
   }
-  if (hasSession && path === LOGIN) {
+  if (hasSession && signedOutPage) {
     return NextResponse.redirect(new URL("/", req.nextUrl));
   }
   return NextResponse.next();

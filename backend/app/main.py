@@ -18,7 +18,7 @@ def seed_admin() -> None:
     if not settings.admin_username or not settings.admin_password:
         return
     with SessionLocal() as db:
-        seed_platform_admin(db, settings.admin_username, settings.admin_password)
+        seed_platform_admin(db, settings.admin_username, settings.admin_password, settings.admin_email)
 
 
 @asynccontextmanager

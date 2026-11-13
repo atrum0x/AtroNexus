@@ -46,6 +46,197 @@
         }
       }
     },
+    "/api/auth/signup": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Signup",
+        "description": "Creates an organization and its owner, sends the verification email, and signs in.",
+        "operationId": "signup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/verify-email": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Verify Email",
+        "operationId": "verify_email",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/resend-verification": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Resend Verification",
+        "operationId": "resend_verification",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/auth/forgot-password": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Forgot Password",
+        "operationId": "forgot_password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/reset-password": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Reset Password",
+        "operationId": "reset_password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/me": {
       "get": {
         "tags": [
@@ -1338,6 +1529,21 @@
         ],
         "title": "CheckResult"
       },
+      "ForgotPasswordRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "minLength": 1,
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "ForgotPasswordRequest"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1515,11 +1721,11 @@
       },
       "LoginRequest": {
         "properties": {
-          "username": {
+          "email": {
             "type": "string",
-            "maxLength": 64,
+            "maxLength": 254,
             "minLength": 1,
-            "title": "Username"
+            "title": "Email"
           },
           "password": {
             "type": "string",
@@ -1530,10 +1736,23 @@
         },
         "type": "object",
         "required": [
-          "username",
+          "email",
           "password"
         ],
         "title": "LoginRequest"
+      },
+      "MessageOut": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "MessageOut"
       },
       "OrganizationOut": {
         "properties": {
@@ -1552,6 +1771,64 @@
           "name"
         ],
         "title": "OrganizationOut"
+      },
+      "ResetPasswordRequest": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Token"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 8,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "password"
+        ],
+        "title": "ResetPasswordRequest"
+      },
+      "SignupRequest": {
+        "properties": {
+          "organization_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Organization Name"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 8,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization_name",
+          "name",
+          "email",
+          "password"
+        ],
+        "title": "SignupRequest"
       },
       "TokenResponse": {
         "properties": {
@@ -1582,8 +1859,37 @@
             "type": "integer",
             "title": "Id"
           },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
           "username": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Username"
           },
           "role": {
@@ -1594,6 +1900,10 @@
             "type": "boolean",
             "title": "Is Platform Admin"
           },
+          "email_verified": {
+            "type": "boolean",
+            "title": "Email Verified"
+          },
           "organization": {
             "$ref": "#/components/schemas/OrganizationOut"
           }
@@ -1601,9 +1911,12 @@
         "type": "object",
         "required": [
           "id",
+          "email",
+          "name",
           "username",
           "role",
           "is_platform_admin",
+          "email_verified",
           "organization"
         ],
         "title": "UserOut"
@@ -1647,6 +1960,21 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VerifyEmailRequest": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "VerifyEmailRequest"
       }
     },
     "securitySchemes": {

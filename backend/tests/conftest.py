@@ -9,6 +9,8 @@ os.environ["ADMIN_USERNAME"] = "admin"
 os.environ["ADMIN_PASSWORD"] = "admin123"
 os.environ["ENCRYPTION_KEY"] = "pXoiNs7zDJ7z0Xk1Ksj0uHnU7pVYxCw8H9C0y2Hx0wM="
 
+from datetime import datetime, timezone  # noqa: E402
+
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import text  # noqa: E402
@@ -16,9 +18,17 @@ from sqlalchemy import text  # noqa: E402
 import app.models_registry  # noqa: E402, F401
 from app.accounts import get_or_create_org  # noqa: E402
 from app.db import Base, SessionLocal, engine  # noqa: E402
+from app.email.sender import outbox  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import User  # noqa: E402
 from app.security import hash_password  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def clear_outbox():
+    outbox.clear()
+    yield
+    outbox.clear()
 
 
 def reset_database() -> None:
@@ -39,7 +49,7 @@ def client():
 
 
 def login_headers(client, username: str, password: str) -> dict[str, str]:
-    res = client.post("/api/auth/login", json={"username": username, "password": password})
+    res = client.post("/api/auth/login", json={"email": username, "password": password})
     assert res.status_code == 200, res.text
     return {"Authorization": f"Bearer {res.json()['access_token']}"}
 
@@ -50,6 +60,7 @@ def auth_headers(client):
 
 
 def add_user(username: str, org_name: str, password: str = "pass1234", **fields) -> None:
+    fields.setdefault("email_verified_at", datetime.now(timezone.utc))
     with SessionLocal() as db:
         org = get_or_create_org(db, org_name)
         db.add(User(organization=org, username=username, password_hash=hash_password(password), **fields))

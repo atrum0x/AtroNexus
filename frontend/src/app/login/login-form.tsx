@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertCircle, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useActionState } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -23,21 +24,33 @@ export function LoginForm() {
       )}
 
       <div className="grid gap-2">
-        <Label htmlFor="username">Username</Label>
+        <Label htmlFor="email">Email</Label>
+        {/* type="text", not "email": accounts from before email sign-in still use a username. */}
         <Input
-          id="username"
-          name="username"
+          id="email"
+          name="email"
+          inputMode="email"
           autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
           autoFocus
           required
-          defaultValue={state.username}
+          defaultValue={state.email}
           aria-invalid={!!state.error}
           disabled={pending}
         />
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="password">Password</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">Password</Label>
+          <Link
+            href="/forgot-password"
+            className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Forgot password?
+          </Link>
+        </div>
         <Input
           id="password"
           name="password"

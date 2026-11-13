@@ -8,8 +8,11 @@ import type { OrganizationOut } from './organizationOut';
 
 export interface UserOut {
   id: number;
-  username: string;
+  email: string | null;
+  name: string | null;
+  username: string | null;
   role: string;
   is_platform_admin: boolean;
+  email_verified: boolean;
   organization: OrganizationOut;
 }

@@ -51,7 +51,7 @@ async function Greeting() {
   const user = await getCurrentUser();
   return (
     <div className="grid gap-1">
-      <h1 className="text-2xl font-semibold tracking-tight">Welcome, {user.username}</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Welcome, {user.name ?? user.username ?? user.email}</h1>
       <p className="text-sm text-muted-foreground">{user.organization.name}</p>
     </div>
   );
