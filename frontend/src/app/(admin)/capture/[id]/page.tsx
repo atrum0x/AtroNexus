@@ -10,6 +10,7 @@ import {
 } from "@/api/generated/endpoints/capture/capture";
 import { listConnections } from "@/api/generated/endpoints/ifs-connections/ifs-connections";
 import { CheckButton } from "@/components/check-button";
+import { ConfirmButton } from "@/components/confirm-button";
 import { DeleteButton } from "@/components/delete-button";
 import { MembersCantChange } from "@/components/manage-only";
 import { PageHeader, TableSkeleton } from "@/components/page-header";
@@ -24,7 +25,7 @@ import {
 import { getCurrentUser } from "@/lib/auth";
 import { canManage } from "@/lib/roles";
 
-import { checkTarget, removeTarget } from "../actions";
+import { checkTarget, removeTarget, renewLink } from "../actions";
 import { CaptureLink } from "../capture-link";
 import { CapturesTable } from "../captures-table";
 import { TargetForm } from "../target-form";
@@ -100,6 +101,20 @@ async function CaptureTarget({
           </CardHeader>
           <CardContent>
             <CaptureLink publicId={target.public_id} />
+            {manager && (
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+                <p className="max-w-md text-sm text-muted-foreground">
+                  Link leaked or shared by mistake? Give this page a new address. Every old link stops working.
+                </p>
+                <ConfirmButton
+                  action={renewLink.bind(null, id)}
+                  tone="neutral"
+                  label="New link"
+                  title="Give this capture page a new link?"
+                  description="Every link with the current address stops working at once, including ones already sent. Then update the URL in your IFS custom command to the new link, or new captures from IFS will fail."
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
 

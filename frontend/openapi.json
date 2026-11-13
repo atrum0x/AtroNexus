@@ -764,6 +764,54 @@
         }
       }
     },
+    "/api/capture/targets/{target_id}/new-link": {
+      "post": {
+        "tags": [
+          "capture"
+        ],
+        "summary": "Renew Capture Link",
+        "description": "Gives the capture page a new random address. Every link with the old one\nstops working at once, so the IFS custom command must be updated.",
+        "operationId": "renew_capture_link",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "target_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Target Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaptureTargetOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/capture/targets/{target_id}/test": {
       "post": {
         "tags": [

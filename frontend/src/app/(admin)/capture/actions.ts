@@ -1,10 +1,12 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 
 import {
   createCaptureTarget,
   deleteCaptureTarget,
+  renewCaptureLink,
   testCaptureTarget,
   updateCaptureTarget,
 } from "@/api/generated/endpoints/capture/capture";
@@ -59,4 +61,14 @@ export async function removeTarget(id: number): Promise<{ error?: string }> {
     return { error: errorMessage(err) };
   }
   redirect("/capture");
+}
+
+export async function renewLink(id: number): Promise<{ error?: string }> {
+  try {
+    await renewCaptureLink(id);
+    refresh();
+    return {};
+  } catch (err) {
+    return { error: errorMessage(err) };
+  }
 }

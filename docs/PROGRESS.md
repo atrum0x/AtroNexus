@@ -34,6 +34,8 @@ Only the Vercel frontend can call the backend: every request must carry the shar
 | 15 | SaaS step 7 (part): IFS addresses must be public (SSRF guard) | PR #8 |
 | 16 | Sidebar navigation (shadcn) | PR #9 |
 | 17 | Light/dark mode, sharper headings, capture page polish | PR #10 |
+| 18 | Custom domain atrum0x.com, real email through Resend | settings only |
+| 19 | Capture links: rate limits and a New link button | PR #11 |
 
 ## 1. Foundations
 
@@ -157,6 +159,13 @@ The plan: customers sign up themselves, each company has its own space and dashb
 - **Light/dark mode** (PR #10): in the sidebar's user menu, under Appearance: Light, Dark, or Same as device (the default). Remembered in the browser. The public capture page and the sign-in pages follow it too.
 - **Headings:** every page title is larger on wider screens, with a short description and a line under it; the dashboard uses the same heading.
 - **Capture page on phones:** the AtroNexus mark above the card, a coloured status circle (blue while looking, green when saved, amber without a location, red when IFS refused), larger headings, full-width buttons at least 44px tall, and room for the iPhone home bar.
+
+## 7. Domain, email and capture link safety
+
+- **Domain:** `atrum0x.com` (DNS on Cloudflare). The app runs at `https://atronexus.atrum0x.com` on Vercel. Email goes out through Resend from `no-reply-atronexus@atrum0x.com` (DKIM, SPF on `send.atrum0x.com`, DMARC set up). The admin account's email was corrected to `senujajayasekara@gmail.com`.
+- **Keep the `atronexus` DNS record "DNS only" (grey cloud) in Cloudflare.** Proxied through Cloudflare, Vercel would see Cloudflare's IP instead of the visitor's, and the capture page would save the wrong IP.
+- **Capture links (PR #11):** rate limits on the public capture endpoints (opening: 60/min per visitor; submitting: 10/min and 60/hour per visitor, 300/hour per capture page in total), a friendly "Too many attempts" page, and a **New link** button on each capture page that changes its address so every old link stops working (then update the IFS custom command).
+- **Still open for capture links:** links are shared per capture page, so one leaked link works for any request ID until renewed. The proper fix is one-time links per request (IFS asks AtroNexus for a link when it creates the request), planned with the secure-links building block for the approvals tool. Optional extra: only accept a capture while the IFS record's status still says it's waiting for one (PATCH targets only).
 
 ## Environment variables
 
