@@ -8,7 +8,16 @@ import { getSessionToken } from "@/lib/session";
 // generated function goes through here. It runs on the server only because
 // the JWT lives in an HttpOnly cookie that the browser can't read.
 
-const API_URL = process.env.API_URL ?? "http://localhost:8000";
+const API_URL = normalizeBaseUrl(process.env.API_URL ?? "http://localhost:8000");
+
+// Forgives the two easy mistakes when setting API_URL by hand: a missing
+// scheme ("api.example.com") and a trailing slash, which would turn every
+// request into "//api/...".
+function normalizeBaseUrl(raw: string): string {
+  let url = raw.trim().replace(/\/+$/, "");
+  if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+  return url;
+}
 // Shared secret with the backend; it refuses requests without it when set.
 // Server-only: never prefix it with NEXT_PUBLIC_.
 const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;

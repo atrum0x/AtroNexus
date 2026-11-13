@@ -26,6 +26,17 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     if (err instanceof ApiError && err.status === 401) {
       return { error: "Invalid username or password.", username };
     }
+    // Shows up in the Vercel function logs, so a misconfiguration is findable.
+    console.error("Login request failed:", err);
+    if (err instanceof ApiError && err.status === 403) {
+      return {
+        error: "The server refused the request. INTERNAL_API_KEY differs between the frontend and the backend.",
+        username,
+      };
+    }
+    if (err instanceof ApiError) {
+      return { error: `Sign-in failed (${err.status}): ${err.message}`, username };
+    }
     return { error: "Can't reach the server. Try again in a moment.", username };
   }
 
