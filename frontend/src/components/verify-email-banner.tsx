@@ -9,7 +9,7 @@ export async function VerifyEmailBanner() {
 
   return (
     <div className="border-b bg-amber-50 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100">
-      <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-6 py-2.5 text-sm">
+      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 text-sm md:px-8">
         <p className="flex-1">
           Confirm your email address to connect AtroNexus to IFS. We sent a link to{" "}
           <strong className="font-medium">{user.email}</strong>.
