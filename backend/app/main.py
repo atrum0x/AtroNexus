@@ -9,6 +9,7 @@ from app.accounts import seed_platform_admin
 from app.capture import router as capture
 from app.config import get_settings
 from app.ifs import router as ifs
+from app.platform import router as platform
 from app.team import router as team
 from app.tools import router as tools
 from app.usage import router as usage
@@ -57,6 +58,7 @@ app.include_router(team.router)
 app.include_router(team.public_router)
 app.include_router(tools.router)
 app.include_router(usage.router)
+app.include_router(platform.router)
 
 
 @app.get("/api/health", tags=["meta"])

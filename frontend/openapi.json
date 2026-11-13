@@ -1449,6 +1449,137 @@
         ]
       }
     },
+    "/api/platform/organizations": {
+      "get": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "List Organizations",
+        "operationId": "list_organizations",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformOverview"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/platform/organizations/{org_id}": {
+      "get": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "Get Organization",
+        "operationId": "get_organization",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/platform/organizations/{org_id}/status": {
+      "put": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "Set Organization Status",
+        "description": "Suspends or reactivates a customer. Suspended: nobody can sign in, sessions stop\nworking, and public links answer 404. Nothing is deleted.",
+        "operationId": "set_organization_status",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "tags": [
@@ -2115,6 +2246,30 @@
         ],
         "title": "CostLine"
       },
+      "ErrorRow": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "message",
+          "at"
+        ],
+        "title": "ErrorRow"
+      },
       "ForgotPasswordRequest": {
         "properties": {
           "email": {
@@ -2515,6 +2670,76 @@
         ],
         "title": "MemberOut"
       },
+      "MemberRow": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "email_verified": {
+            "type": "boolean",
+            "title": "Email Verified"
+          },
+          "is_platform_admin": {
+            "type": "boolean",
+            "title": "Is Platform Admin"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "username",
+          "role",
+          "email_verified",
+          "is_platform_admin",
+          "created_at"
+        ],
+        "title": "MemberRow"
+      },
       "MessageOut": {
         "properties": {
           "message": {
@@ -2527,6 +2752,194 @@
           "message"
         ],
         "title": "MessageOut"
+      },
+      "OrgDetail": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "status_changed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Changed At"
+          },
+          "status_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Reason"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "is_platform_org": {
+            "type": "boolean",
+            "title": "Is Platform Org"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/MemberRow"
+            },
+            "type": "array",
+            "title": "Members"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/ToolRow"
+            },
+            "type": "array",
+            "title": "Tools"
+          },
+          "tool_history": {
+            "items": {
+              "$ref": "#/components/schemas/ToolHistoryRow"
+            },
+            "type": "array",
+            "title": "Tool History"
+          },
+          "connections": {
+            "type": "integer",
+            "title": "Connections"
+          },
+          "capture_pages": {
+            "type": "integer",
+            "title": "Capture Pages"
+          },
+          "estimated_revenue": {
+            "type": "string",
+            "title": "Estimated Revenue"
+          },
+          "recent_errors": {
+            "items": {
+              "$ref": "#/components/schemas/ErrorRow"
+            },
+            "type": "array",
+            "title": "Recent Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "status_changed_at",
+          "status_reason",
+          "created_at",
+          "is_platform_org",
+          "members",
+          "tools",
+          "tool_history",
+          "connections",
+          "capture_pages",
+          "estimated_revenue",
+          "recent_errors"
+        ],
+        "title": "OrgDetail"
+      },
+      "OrgRow": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "members": {
+            "type": "integer",
+            "title": "Members"
+          },
+          "tools": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tools"
+          },
+          "usage_succeeded": {
+            "type": "integer",
+            "title": "Usage Succeeded"
+          },
+          "usage_failed": {
+            "type": "integer",
+            "title": "Usage Failed"
+          },
+          "estimated_revenue": {
+            "type": "string",
+            "title": "Estimated Revenue"
+          },
+          "last_activity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Activity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "created_at",
+          "owner",
+          "members",
+          "tools",
+          "usage_succeeded",
+          "usage_failed",
+          "estimated_revenue",
+          "last_activity"
+        ],
+        "title": "OrgRow"
       },
       "OrganizationOut": {
         "properties": {
@@ -2594,6 +3007,75 @@
           "checklist"
         ],
         "title": "Overview"
+      },
+      "PlatformOverview": {
+        "properties": {
+          "month_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Month Start"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/PlatformSummary"
+          },
+          "organizations": {
+            "items": {
+              "$ref": "#/components/schemas/OrgRow"
+            },
+            "type": "array",
+            "title": "Organizations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "month_start",
+          "summary",
+          "organizations"
+        ],
+        "title": "PlatformOverview"
+      },
+      "PlatformSummary": {
+        "properties": {
+          "organizations": {
+            "type": "integer",
+            "title": "Organizations"
+          },
+          "active": {
+            "type": "integer",
+            "title": "Active"
+          },
+          "suspended": {
+            "type": "integer",
+            "title": "Suspended"
+          },
+          "users": {
+            "type": "integer",
+            "title": "Users"
+          },
+          "usage_succeeded": {
+            "type": "integer",
+            "title": "Usage Succeeded"
+          },
+          "usage_failed": {
+            "type": "integer",
+            "title": "Usage Failed"
+          },
+          "estimated_revenue": {
+            "type": "string",
+            "title": "Estimated Revenue"
+          }
+        },
+        "type": "object",
+        "required": [
+          "organizations",
+          "active",
+          "suspended",
+          "users",
+          "usage_succeeded",
+          "usage_failed",
+          "estimated_revenue"
+        ],
+        "title": "PlatformSummary"
       },
       "RecentError": {
         "properties": {
@@ -2705,6 +3187,35 @@
         ],
         "title": "SignupRequest"
       },
+      "StatusChange": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "suspended"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "StatusChange"
+      },
       "TokenResponse": {
         "properties": {
           "access_token": {
@@ -2727,6 +3238,47 @@
           "expires_in"
         ],
         "title": "TokenResponse"
+      },
+      "ToolHistoryRow": {
+        "properties": {
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool",
+          "name",
+          "enabled",
+          "by",
+          "at"
+        ],
+        "title": "ToolHistoryRow"
       },
       "ToolOut": {
         "properties": {
@@ -2789,6 +3341,57 @@
           "enabled"
         ],
         "title": "ToolOut"
+      },
+      "ToolRow": {
+        "properties": {
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "enabled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled At"
+          },
+          "succeeded": {
+            "type": "integer",
+            "title": "Succeeded"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          },
+          "last_month_succeeded": {
+            "type": "integer",
+            "title": "Last Month Succeeded"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool",
+          "name",
+          "enabled",
+          "enabled_at",
+          "succeeded",
+          "failed",
+          "last_month_succeeded"
+        ],
+        "title": "ToolRow"
       },
       "ToolSwitch": {
         "properties": {

@@ -30,6 +30,7 @@ Only the Vercel frontend can call the backend: every request must carry the shar
 | 11 | SaaS step 4: tools switched on and off per organization | PR #5 |
 | 12 | Progress notes (this file) | PR #5 |
 | 13 | SaaS step 5: usage counting and the overview dashboard | PR #6 |
+| 14 | SaaS step 6: platform admin | PR #7 |
 
 ## 1. Foundations
 
@@ -74,7 +75,7 @@ Only the Vercel frontend can call the backend: every request must carry the shar
 - Neon is used through its pooled (PgBouncer) host, so prepared statements are switched off (`prepare_threshold=None`).
 - Live sign-in failed at first because of the Vercel environment variables. `API_URL` now gets `https://` added and a trailing `/` removed, and the login form says which problem it is.
 
-## 5. SaaS steps 1 to 5
+## 5. SaaS steps 1 to 6
 
 The plan: customers sign up themselves, each company has its own space and dashboard, and pays a monthly fee per tool (plus usage where a tool has a real cost per use). Payments come later.
 
@@ -129,6 +130,14 @@ The plan: customers sign up themselves, each company has its own space and dashb
   - for owners and admins, an estimated cost for the month: the monthly fees of switched-on tools plus usage at the per-use price (placeholder prices; nothing charged)
 - Months are calendar months in UTC.
 
+### Step 6: platform admin (PR #7)
+
+- **Platform section** (`/platform`), only for the platform admin. Anyone else gets a "not found" page, and the API answers 404 rather than "forbidden".
+- **Overview:** totals across all customers (customers, active and suspended, users, usage this month, estimated monthly revenue at placeholder prices) and a table of every organization with owner, members, tools, usage and estimated revenue.
+- **Customer detail:** members (with unconfirmed emails marked), tools with usage this month and last, the on/off history with who switched, counts of connections and capture pages, and recent errors.
+- **Suspend and reactivate**, with an optional reason that only the platform admin sees. Suspending blocks sign-in, ends sessions and stops the customer's links; nothing is deleted. The platform's own organization can't be suspended.
+- Fixed during testing: the suspend dialog now closes after it succeeds, and always sends the status shown on the button.
+
 ## Environment variables
 
 **Backend (Northflank):** `DATABASE_URL`, `JWT_SECRET`, `ENCRYPTION_KEY`, `INTERNAL_API_KEY`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_EMAIL` (optional), `APP_URL` (the Vercel address, used in email links), `EMAIL_BACKEND` (`console` or `resend`), and with Resend: `RESEND_API_KEY`, `EMAIL_FROM`.
@@ -147,7 +156,7 @@ The plan: customers sign up themselves, each company has its own space and dashb
 **Next SaaS steps:**
 
 5. ~~Usage counting and an overview dashboard per organization.~~ Done in PR #6.
-6. Platform admin view: every customer, their tools and usage, suspending a customer.
+6. ~~Platform admin view: every customer, their tools and usage, suspending a customer.~~ Done in PR #7.
 7. Hardening: block internal addresses as IFS URLs (SSRF), rate limits on sign-in, sign-up and public endpoints, a CAPTCHA on sign-up.
 
 Later: payments (monthly subscription per switched-on tool, usage billed from the usage records), terms of service and privacy pages before public sign-up.
