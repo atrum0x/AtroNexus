@@ -34,7 +34,14 @@ export class ApiError extends Error {
 
 // Endpoints that never take the session token. A 401 from them is a normal
 // error (e.g. wrong password), not an expired session.
-const NO_TOKEN_PREFIXES = ["/api/auth/login", "/api/public/"];
+const NO_TOKEN_PREFIXES = [
+  "/api/auth/login",
+  "/api/auth/signup",
+  "/api/auth/verify-email",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/public/",
+];
 
 export async function apiFetch<T>(url: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);

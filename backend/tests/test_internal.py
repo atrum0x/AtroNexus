@@ -12,11 +12,11 @@ def with_key(monkeypatch):
 
 
 def test_without_key_configured_everything_works_as_before(client):
-    assert client.post("/api/auth/login", json={"username": "admin", "password": "admin123"}).status_code == 200
+    assert client.post("/api/auth/login", json={"email": "admin", "password": "admin123"}).status_code == 200
 
 
 def test_requests_without_the_key_are_refused(client, with_key):
-    res = client.post("/api/auth/login", json={"username": "admin", "password": "admin123"})
+    res = client.post("/api/auth/login", json={"email": "admin", "password": "admin123"})
     assert res.status_code == 403
     assert client.get("/api/public/capture/x/REQ-1").status_code == 403
     assert client.get("/docs").status_code == 403
@@ -30,7 +30,7 @@ def test_wrong_key_is_refused(client, with_key):
 def test_right_key_is_let_through(client, with_key):
     res = client.post(
         "/api/auth/login",
-        json={"username": "admin", "password": "admin123"},
+        json={"email": "admin", "password": "admin123"},
         headers={"X-Internal-Key": KEY},
     )
     assert res.status_code == 200

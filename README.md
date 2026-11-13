@@ -76,7 +76,14 @@ The database schema is created and upgraded automatically when the backend start
 
 `npm run gen:api` doesn't need the backend running. It exports the OpenAPI spec straight from the FastAPI app into `frontend/openapi.json`, then Orval generates `frontend/src/api/generated/`. Don't edit the generated files by hand.
 
-## How sign-in works
+## Accounts and sign-in
+
+- **Sign-up (`/signup`):** anyone can create an account. It creates a new organization (their company) with them as its owner, signs them in, and emails a link to confirm the address. Until they confirm it, they can look around but can't save or test IFS connections or capture pages.
+- **Sign-in** uses the email address. Accounts from before email sign-in (like the seeded `admin`) can still use their username; set `ADMIN_EMAIL` to give the admin an email.
+- **Forgot password (`/forgot-password`)** emails a reset link that works once, for 1 hour. Resetting signs the user out everywhere else.
+- **Emails:** with `EMAIL_BACKEND=console` (the default) nothing is sent; each email, including its link, is printed in the backend log. To send for real, verify a domain at [Resend](https://resend.com) and set `EMAIL_BACKEND=resend`, `RESEND_API_KEY` and `EMAIL_FROM` (an address on that domain). `APP_URL` must be the frontend's public address, because the links in emails point there.
+
+How a sign-in works:
 
 1. The login form posts to a Next.js server action, which calls `POST /api/auth/login` on the backend.
 2. The backend checks the password (argon2) and returns a JWT.
@@ -166,7 +173,11 @@ Notes:
    | `INTERNAL_API_KEY` | from step 1 |
    | `ADMIN_USERNAME` | e.g. `admin` |
    | `ADMIN_PASSWORD` | a strong password (only used to create the user on the first start) |
+   | `ADMIN_EMAIL` | optional: your email, so you can sign in with it and reset your password |
    | `DATABASE_URL` | the Neon pooled connection string from step 2 |
+   | `APP_URL` | the Vercel address, e.g. `https://atro-nexus.vercel.app` (links in emails point here) |
+   | `EMAIL_BACKEND` | `console` until you have a sending domain (emails go to the log), then `resend` |
+   | `RESEND_API_KEY`, `EMAIL_FROM` | only with `EMAIL_BACKEND=resend`; `EMAIL_FROM` like `AtroNexus <no-reply@yourdomain.com>` |
 
 4. Deploy, then open `https://<northflank-url>/api/health`. It should answer `{"status":"ok"}`. Any other path should answer `{"detail":"Forbidden"}`, which shows the key check works.
 

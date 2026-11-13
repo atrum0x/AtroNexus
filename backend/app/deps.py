@@ -2,7 +2,6 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -27,11 +26,14 @@ def get_current_user(
     )
     if credentials is None:
         raise unauthorized
-    username = decode_access_token(credentials.credentials)
-    if username is None:
+    token = decode_access_token(credentials.credentials)
+    if token is None:
         raise unauthorized
-    user = db.scalar(select(User).where(User.username == username))
+    user = db.get(User, token.user_id)
     if user is None or not user.is_active:
+        raise unauthorized
+    # A password reset ends every session that started before it.
+    if user.password_changed_at and token.issued_at < user.password_changed_at:
         raise unauthorized
     if user.organization.status != ORG_ACTIVE:
         raise HTTPException(status.HTTP_403_FORBIDDEN, SUSPENDED_MESSAGE)
@@ -52,3 +54,18 @@ def get_current_org_id(user: CurrentUser) -> int:
 
 
 OrgId = Annotated[int, Depends(get_current_org_id)]
+
+
+def require_verified_email(user: CurrentUser) -> None:
+    """For actions that reach outside AtroNexus (saving or testing IFS connections).
+
+    A self-service account can sign in and look around right away, but must
+    prove its email address before it can make the server call other systems.
+    """
+    if user.email_verified_at is None:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Verify your email address first. We sent you a link when you signed up."
+        )
+
+
+VerifiedEmail = Depends(require_verified_email)

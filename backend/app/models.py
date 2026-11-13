@@ -36,8 +36,16 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), index=True)
-    username: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    # Signs in with the email. Stored lowercase. Users from before sign-up
+    # existed may have none and sign in with their username instead.
+    email: Mapped[str | None] = mapped_column(String(254), unique=True, index=True)
+    name: Mapped[str | None] = mapped_column(String(100))
+    # Only users created before email sign-in (and the CLI) have one.
+    username: Mapped[str | None] = mapped_column(String(64), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
+    email_verified_at: Mapped[datetime | None] = mapped_column(UtcDateTime())
+    # Sessions issued before this stop working (set by a password reset).
+    password_changed_at: Mapped[datetime | None] = mapped_column(UtcDateTime())
     role: Mapped[str] = mapped_column(String(20), default="owner")
     # Runs the platform (sees every organization). Not tied to the user's own organization.
     is_platform_admin: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -45,3 +53,28 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=_now)
 
     organization: Mapped[Organization] = relationship(lazy="joined")
+
+
+# AuthToken.purpose
+VERIFY_EMAIL = "verify_email"
+RESET_PASSWORD = "reset_password"
+
+
+class AuthToken(Base):
+    """A one-time link sent by email (verify the address, reset the password).
+
+    Only a SHA-256 hash of the token is stored, so a database leak doesn't
+    leak working links.
+    """
+
+    __tablename__ = "auth_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    purpose: Mapped[str] = mapped_column(String(30))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(UtcDateTime())
+    used_at: Mapped[datetime | None] = mapped_column(UtcDateTime())
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=_now)
+
+    user: Mapped[User] = relationship(lazy="joined")

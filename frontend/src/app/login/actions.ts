@@ -8,36 +8,39 @@ import { clearSession, setSession } from "@/lib/session";
 
 export type LoginState = {
   error?: string;
-  username?: string;
+  email?: string;
 };
 
 export async function login(_prev: LoginState, formData: FormData): Promise<LoginState> {
-  const username = String(formData.get("username") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
-  if (!username || !password) {
-    return { error: "Enter your username and password.", username };
+  if (!email || !password) {
+    return { error: "Enter your email and password.", email };
   }
 
   try {
-    const data = await loginRequest({ username, password });
+    const data = await loginRequest({ email, password });
     await setSession(data.access_token, data.expires_in);
   } catch (err) {
     if (err instanceof ApiError && err.status === 401) {
-      return { error: "Invalid username or password.", username };
+      return { error: "Invalid email or password.", email };
     }
     // Shows up in the Vercel function logs, so a misconfiguration is findable.
     console.error("Login request failed:", err);
+    if (err instanceof ApiError && err.status === 403 && err.message.includes("suspended")) {
+      return { error: err.message, email };
+    }
     if (err instanceof ApiError && err.status === 403) {
       return {
         error: "The server refused the request. INTERNAL_API_KEY differs between the frontend and the backend.",
-        username,
+        email,
       };
     }
     if (err instanceof ApiError) {
-      return { error: `Sign-in failed (${err.status}): ${err.message}`, username };
+      return { error: `Sign-in failed (${err.status}): ${err.message}`, email };
     }
-    return { error: "Can't reach the server. Try again in a moment.", username };
+    return { error: "Can't reach the server. Try again in a moment.", email };
   }
 
   redirect("/");

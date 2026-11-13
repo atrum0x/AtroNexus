@@ -96,7 +96,7 @@ def test_new_rows_belong_to_the_creators_org(client, other_org_headers, fake_ifs
 
 def test_suspended_org_cant_sign_in_or_use_its_token(client, other_org_headers):
     suspend("Other Co")
-    res = client.post("/api/auth/login", json={"username": "bob", "password": "pass1234"})
+    res = client.post("/api/auth/login", json={"email": "bob", "password": "pass1234"})
     assert res.status_code == 403
     assert "suspended" in res.json()["detail"]
     assert client.get("/api/auth/me", headers=other_org_headers).status_code == 403
