@@ -286,6 +286,18 @@ def test_render_keeps_types_for_whole_placeholders():
     assert out == {"a": None, "b": ["Captured"], "c": "xy", "d": 5}
 
 
+def test_text_suffix_sends_numbers_as_strings():
+    template = '{"lat": "{latitude:text}", "acc": "{accuracy:text}", "lon": "{longitude:text}", "s": "at {latitude:text}"}'
+    validate_template(template)
+    out = render_body(template, {"latitude": 6.9271, "accuracy": 12, "longitude": None})
+    assert out == {"lat": "6.9271", "acc": "12", "lon": None, "s": "at 6.9271"}
+
+
+def test_validate_template_rejects_unknown_placeholder_with_text_suffix():
+    with pytest.raises(ValueError, match="nope"):
+        validate_template('{"a": "{nope:text}"}')
+
+
 def test_validate_template_rejects_non_object():
     with pytest.raises(ValueError):
         validate_template("[1, 2]")

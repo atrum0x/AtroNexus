@@ -133,7 +133,7 @@ export function TargetForm({
       <Field
         label="Request body"
         htmlFor="body_template"
-        hint="JSON sent to IFS. Use the attribute names of your IFS entity (custom attributes start with Cf). A value that is exactly one placeholder keeps its type, so numbers stay numbers."
+        hint="JSON sent to IFS. Use the attribute names of your IFS entity (custom attributes start with Cf). A value that is exactly one placeholder keeps its type, so numbers stay numbers. For Text attributes in IFS, add :text, e.g. {latitude:text}."
       >
         <Textarea
           id="body_template"

@@ -88,7 +88,7 @@ A button in IFS opens a link to this site. The page reads the user's location, I
 1. **IFS connections → New connection.** Enter the IFS base URL and a service user. For IFS Cloud, use OAuth2: the token URL (usually `https://<ifs-host>/auth/realms/<realm>/protocol/openid-connect/token`), the client ID and the client secret. Save, then use **Test connection**.
 2. **Capture pages → New capture page.** Pick the connection and enter:
    - **IFS endpoint:** the path to the capture request record, with `{request_id}` where the ID goes.
-   - **Request body:** JSON with your entity's attribute names and placeholders such as `{latitude}` and `{ip}`. The list of placeholders is on the form.
+   - **Request body:** JSON with your entity's attribute names and placeholders such as `{latitude}` and `{ip}`. The list of placeholders is on the form. `"{latitude}"` on its own is sent as a number; if the IFS attribute is Text, write `"{latitude:text}"` so it's sent as a string (IFS rejects a number for a Text attribute).
 3. Copy the **Link for IFS**. It looks like `https://<this site>/c/<id>/${RequestId}`.
 
 **Set it up in IFS** (not part of this repo yet):

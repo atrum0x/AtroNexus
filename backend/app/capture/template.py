@@ -2,8 +2,10 @@
 
 The template is a JSON object whose string values may contain {placeholders}.
 A value that is exactly one placeholder, like "{latitude}", is replaced with
-the typed value (a number, or null when missing). Placeholders inside longer
-strings are replaced with text.
+the typed value (a number, or null when missing). Adding ":text", like
+"{latitude:text}", sends it as a string instead, for IFS attributes of type
+Text (Edm.String), which reject numbers. Placeholders inside longer strings
+are always replaced with text.
 """
 
 import json
@@ -45,7 +47,9 @@ DEFAULT_ENDPOINT_PATH = (
     "/CaptureRequestSet(RequestId='{request_id}')"
 )
 
-_PLACEHOLDER = re.compile(r"\{(\w+)\}")
+# {name} or {name:text}. The endpoint path only takes plain {request_id}.
+_PLACEHOLDER = re.compile(r"\{(\w+)(:text)?\}")
+_PATH_PLACEHOLDER = re.compile(r"\{(\w+)\}")
 
 
 def validate_template(text: str) -> None:
@@ -64,7 +68,7 @@ def validate_template(text: str) -> None:
 def validate_endpoint_path(path: str) -> None:
     if not path.startswith("/"):
         raise ValueError("Endpoint path must start with /.")
-    unknown = sorted(set(_PLACEHOLDER.findall(path)) - {"request_id"})
+    unknown = sorted(set(_PATH_PLACEHOLDER.findall(path)) - {"request_id"})
     if unknown:
         raise ValueError(f"Endpoint path can only use {{request_id}}, not: {', '.join(unknown)}.")
 
@@ -87,7 +91,10 @@ def _render(node: Any, values: dict[str, Any]) -> Any:
     if isinstance(node, str):
         whole = _PLACEHOLDER.fullmatch(node)
         if whole and whole.group(1) in values:
-            return values[whole.group(1)]
+            value = values[whole.group(1)]
+            if whole.group(2) and value is not None:
+                return str(value)
+            return value
         def as_text(m: re.Match[str]) -> str:
             key = m.group(1)
             if key not in values:
@@ -104,5 +111,5 @@ def _find_placeholders(node: Any) -> set[str]:
     if isinstance(node, list):
         return set().union(*(_find_placeholders(v) for v in node)) if node else set()
     if isinstance(node, str):
-        return set(_PLACEHOLDER.findall(node))
+        return {name for name, _ in _PLACEHOLDER.findall(node)}
     return set()
