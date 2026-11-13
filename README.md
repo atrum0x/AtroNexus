@@ -87,6 +87,8 @@ The database schema is created and upgraded automatically when the backend start
 
 - **Tools (`/tools`):** each organization switches on the tools it uses; owners and admins switch, members can only look. Prices shown are placeholders and nothing is charged yet. A tool that's off disappears from the menu, its admin pages say it's off, and its public links (e.g. capture links) stop working; its settings and history are kept. New sign-ups start with no tools.
 
+- **Dashboard (home page):** a setup checklist until everything is done, usage per tool this month (sent and failed, compared with last month), the latest errors with a link to fix them, and, for owners and admins, an estimated cost for the month at the placeholder prices. Usage is counted per organization; failures are never billable.
+
 How a sign-in works:
 
 1. The login form posts to a Next.js server action, which calls `POST /api/auth/login` on the backend.
