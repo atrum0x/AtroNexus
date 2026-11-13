@@ -28,6 +28,9 @@ class Organization(Base):
     # "active" or "suspended". A suspended organization can't sign in and its
     # public links stop working.
     status: Mapped[str] = mapped_column(String(20), default=ORG_ACTIVE)
+    # When and why the platform admin last suspended or reactivated it.
+    status_changed_at: Mapped[datetime | None] = mapped_column(UtcDateTime())
+    status_reason: Mapped[str | None] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=_now)
 
 

@@ -94,24 +94,19 @@ def get_overview(db: DbSession, org_id: OrgId, me: CurrentUser) -> Overview:
 
     estimate = None
     if me.role in ("owner", "admin"):
-        lines = []
-        for t in TOOLS:
-            if t.code not in enabled:
-                continue
-            count = this_month.get(t.code, service.ToolUsage()).succeeded
-            usage_cost = (t.usage_price or Decimal(0)) * count
-            lines.append(
-                CostLine(
-                    tool=t.code,
-                    name=t.name,
-                    monthly_fee=t.monthly_price,
-                    usage_count=count,
-                    usage_price=t.usage_price,
-                    usage_unit=t.usage_unit,
-                    usage_cost=usage_cost,
-                    total=t.monthly_price + usage_cost,
-                )
+        lines = [
+            CostLine(
+                tool=item.tool.code,
+                name=item.tool.name,
+                monthly_fee=item.tool.monthly_price,
+                usage_count=item.usage_count,
+                usage_price=item.tool.usage_price,
+                usage_unit=item.tool.usage_unit,
+                usage_cost=item.usage_cost,
+                total=item.total,
             )
+            for item in service.cost_items(enabled, this_month)
+        ]
         estimate = CostEstimate(lines=lines, total=sum((line.total for line in lines), Decimal(0)))
 
     return Overview(

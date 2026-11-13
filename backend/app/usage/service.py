@@ -2,10 +2,12 @@
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from decimal import Decimal
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.tools.catalog import TOOLS, Tool
 from app.usage.models import UsageEvent
 
 # Event kinds. "<tool>.<what>"; the success kind is the one that's billable.
@@ -66,3 +68,26 @@ def usage_by_tool(db: Session, org_id: int, start: datetime, end: datetime) -> d
         else:
             usage.failed += int(total)
     return result
+
+
+@dataclass
+class CostItem:
+    tool: Tool
+    usage_count: int
+    usage_cost: Decimal
+
+    @property
+    def total(self) -> Decimal:
+        return self.tool.monthly_price + self.usage_cost
+
+
+def cost_items(enabled: set[str], usage: dict[str, ToolUsage]) -> list[CostItem]:
+    """What a month costs: the monthly fee of each switched-on tool, plus billable
+    usage at the tool's per-use price. Prices are the catalog's (placeholders for now)."""
+    items = []
+    for tool in TOOLS:
+        if tool.code not in enabled:
+            continue
+        count = usage.get(tool.code, ToolUsage()).succeeded
+        items.append(CostItem(tool, count, (tool.usage_price or Decimal(0)) * count))
+    return items

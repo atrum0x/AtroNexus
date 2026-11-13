@@ -121,10 +121,9 @@ def test_estimate_counts_usage_prices(client, other_org_headers, monkeypatch):
     from dataclasses import replace
 
     from app.tools import catalog
-    from app.usage import router
 
     priced = replace(catalog.BY_CODE["capture"], usage_price=Decimal("0.10"), usage_unit="capture")
-    monkeypatch.setattr(router, "TOOLS", tuple(priced if t.code == "capture" else t for t in catalog.TOOLS))
+    monkeypatch.setattr(service, "TOOLS", tuple(priced if t.code == "capture" else t for t in catalog.TOOLS))
     org = org_id_of("bob")
     with SessionLocal() as db:
         for _ in range(3):

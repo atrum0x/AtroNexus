@@ -89,6 +89,8 @@ The database schema is created and upgraded automatically when the backend start
 
 - **Dashboard (home page):** a setup checklist until everything is done, usage per tool this month (sent and failed, compared with last month), the latest errors with a link to fix them, and, for owners and admins, an estimated cost for the month at the placeholder prices. Usage is counted per organization; failures are never billable.
 
+- **Platform (`/platform`):** only the platform admin (the admin user from `.env`) sees it. It shows every customer organization with its owner, members, tools, usage and estimated revenue, and lets you suspend a customer (with a reason) or reactivate it. Suspending blocks sign-in and the customer's links; nothing is deleted.
+
 How a sign-in works:
 
 1. The login form posts to a Next.js server action, which calls `POST /api/auth/login` on the backend.
