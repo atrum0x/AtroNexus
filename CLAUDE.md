@@ -79,7 +79,8 @@ TLS is verified against the OS trust store (`truststore`), not certifi. Keep it 
 - For PATCH, the backend GETs the record first. A 404 means the request ID doesn't exist in IFS, so nothing is written. Otherwise it sends the ETag as `If-Match`.
 - A request ID can be sent once. A failed attempt can be retried and overwrites the earlier row in `captures`. `request_id` is restricted to `[A-Za-z0-9_.:-]{1,100}` because it goes into the IFS URL.
 - **Client IP:** see Deployment above. Off Vercel, a browser can set `x-real-ip`/`x-forwarded-for` itself, so another host would need a proxy that overwrites them.
-- Public endpoints (`/api/public/capture/*`) have no rate limiting yet.
+- **Rate limits** (`app/ratelimit.py`, in-memory, per backend process): opening a capture link 60/min per visitor IP; submitting 10/min and 60/hour per visitor, plus 300/hour per capture page from everyone together (so a leaked link can't flood IFS). Over the limit: 429 with `Retry-After`. The visitor IP is `X-Client-IP`, which the frontend must send on every public call (`clientIpHeaders()` in `src/lib/client-ip.ts`); without it all visitors share Vercel's IP and one limit. Reuse `RateLimiter` + `enforce` for other public endpoints (sign-in, sign-up, password reset are still unlimited). With several backend instances each counts separately; exact limits would need a shared store.
+- **New link** (`POST /api/capture/targets/{id}/new-link`, owners and admins): a new random `public_id`, so every old link stops working at once; the IFS custom command must then be updated. Links are still shared per capture page, not per request; per-request one-time links are planned with the secure-links building block.
 
 This repo sits inside `C:\_PERSONAL\agrum`, whose `CLAUDE.md` is also loaded. That file describes the separate Agrum projects (`agrum_be`, `agrum_fe`, `agrum_mobile`), not AtroNexus. Its rules don't apply here unless AtroNexus decides to reuse that stack.
 

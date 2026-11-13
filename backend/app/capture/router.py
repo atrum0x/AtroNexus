@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, sta
 from sqlalchemy import func, select
 
 from app.capture import service
-from app.capture.models import Capture, CaptureTarget
+from app.capture.models import Capture, CaptureTarget, new_public_id
 from app.capture.schemas import (
     REQUEST_ID_PATTERN,
     CaptureDefaults,
@@ -24,6 +24,7 @@ from app.tools.catalog import CAPTURE
 from app.tools.service import is_enabled, require_tool
 from app.ifs.schemas import CheckResult
 from app.internal import client_ip
+from app.ratelimit import RateLimiter, enforce
 
 # --- Admin: capture page setups and the capture log ---
 
@@ -151,6 +152,16 @@ def delete_capture_target(target_id: int, db: DbSession, org_id: OrgId) -> None:
     db.commit()
 
 
+@router.post("/targets/{target_id}/new-link", response_model=CaptureTargetOut, dependencies=[ManagerOnly])
+def renew_capture_link(target_id: int, db: DbSession, org_id: OrgId) -> CaptureTargetOut:
+    """Gives the capture page a new random address. Every link with the old one
+    stops working at once, so the IFS custom command must be updated."""
+    target = _get_target(db, org_id, target_id)
+    target.public_id = new_public_id()
+    db.commit()
+    return _target_out(target)
+
+
 @router.post("/targets/{target_id}/test", response_model=CheckResult, dependencies=[ManagerOnly, VerifiedEmail])
 def test_capture_target(target_id: int, db: DbSession, org_id: OrgId) -> CheckResult:
     """Signs in and reads the projection's service root, without writing anything."""
@@ -200,6 +211,21 @@ public_router = APIRouter(prefix="/api/public/capture", tags=["capture-public"])
 PublicId = Annotated[str, Path(max_length=32)]
 RequestId = Annotated[str, Path(pattern=REQUEST_ID_PATTERN)]
 
+# Generous for a person, tight for a script. A leaked link can't be used to
+# flood IFS: besides the per-visitor limits, each capture page takes at most
+# SUBMITS_PER_PAGE_PER_HOUR submissions from everyone together.
+SUBMITS_PER_PAGE_PER_HOUR = 300
+view_limiter = RateLimiter(limit=60, window=60)
+submit_limiter_minute = RateLimiter(limit=10, window=60)
+submit_limiter_hour = RateLimiter(limit=60, window=3600)
+page_submit_limiter = RateLimiter(limit=SUBMITS_PER_PAGE_PER_HOUR, window=3600)
+LIMITERS = (view_limiter, submit_limiter_minute, submit_limiter_hour, page_submit_limiter)
+SLOW_DOWN = "Too many attempts from your connection. Wait a minute and try again."
+
+
+def _visitor(request: Request) -> str:
+    return client_ip(request) or "unknown"
+
 
 def _public_target(db: DbSession, public_id: str) -> CaptureTarget:
     target = db.scalar(select(CaptureTarget).where(CaptureTarget.public_id == public_id))
@@ -214,7 +240,10 @@ def _public_target(db: DbSession, public_id: str) -> CaptureTarget:
 
 
 @public_router.get("/{public_id}/{request_id}", response_model=CaptureLinkInfo)
-def get_capture_link(public_id: PublicId, request_id: RequestId, db: DbSession) -> CaptureLinkInfo:
+def get_capture_link(
+    public_id: PublicId, request_id: RequestId, request: Request, db: DbSession
+) -> CaptureLinkInfo:
+    enforce(view_limiter, _visitor(request), SLOW_DOWN)
     target = _public_target(db, public_id)
     sent = db.scalar(
         select(func.count())
@@ -236,7 +265,15 @@ def submit_capture(
     request: Request,
     db: DbSession,
 ) -> CaptureResult:
+    visitor = _visitor(request)
+    enforce(submit_limiter_minute, visitor, SLOW_DOWN)
+    enforce(submit_limiter_hour, visitor, SLOW_DOWN)
     target = _public_target(db, public_id)
+    enforce(
+        page_submit_limiter,
+        f"target:{target.id}",
+        "This capture page is getting too many submissions right now. Try again later.",
+    )
     # The page posts through the Next.js server, which passes the browser's
     # address in X-Client-IP. See app/internal.py for when it's trusted.
     try:

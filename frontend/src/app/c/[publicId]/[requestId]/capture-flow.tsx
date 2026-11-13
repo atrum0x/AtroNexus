@@ -250,7 +250,7 @@ export function CaptureFlow({
 
       {step.kind === "failed" && (
         <>
-          <StatusBlock icon={XCircle} tone="error" title="IFS didn't accept it">
+          <StatusBlock icon={XCircle} tone="error" title="Not saved yet">
             {step.message}
           </StatusBlock>
           <Button size="lg" className="h-11 w-full" onClick={() => void send(step.input)}>

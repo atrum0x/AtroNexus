@@ -182,6 +182,31 @@ export const deleteCaptureTarget = async (targetId: number, options?: Parameters
 );}
 
 
+export const getRenewCaptureLinkUrl = (targetId: number,) => {
+
+
+
+
+  return `/api/capture/targets/${targetId}/new-link`
+}
+
+/**
+ * Gives the capture page a new random address. Every link with the old one
+ * stops working at once, so the IFS custom command must be updated.
+ * @summary Renew Capture Link
+ */
+export const renewCaptureLink = async (targetId: number, options?: Parameters<typeof apiFetch>[1]): Promise<CaptureTargetOut> => {
+
+  return apiFetch<CaptureTargetOut>(getRenewCaptureLinkUrl(targetId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
 export const getTestCaptureTargetUrl = (targetId: number,) => {
 
 

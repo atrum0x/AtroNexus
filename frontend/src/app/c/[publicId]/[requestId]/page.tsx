@@ -1,10 +1,11 @@
-import { CheckCircle2, Link2Off, type LucideIcon } from "lucide-react";
+import { CheckCircle2, Hourglass, Link2Off, type LucideIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { ApiError } from "@/api/fetcher";
 import { getCaptureLink } from "@/api/generated/endpoints/capture-public/capture-public";
 import { Card, CardContent } from "@/components/ui/card";
+import { clientIpHeaders } from "@/lib/client-ip";
 
 import { CaptureFlow } from "./capture-flow";
 import { StatusBlock, type Tone } from "./status-icon";
@@ -45,8 +46,15 @@ async function CaptureLoader({
 
   let link;
   try {
-    link = await getCaptureLink(publicId, requestId);
+    link = await getCaptureLink(publicId, requestId, { headers: await clientIpHeaders() });
   } catch (err) {
+    if (err instanceof ApiError && err.status === 429) {
+      return (
+        <Message icon={Hourglass} tone="warning" title="Too many attempts">
+          Wait a minute, then open the link again.
+        </Message>
+      );
+    }
     if (err instanceof ApiError && (err.status === 404 || err.status === 422)) {
       return (
         <Message icon={Link2Off} tone="neutral" title="This link isn't valid">

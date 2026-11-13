@@ -21,7 +21,8 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _public_id() -> str:
+def new_public_id() -> str:
+    """16 random URL-safe characters (96 bits): can't be guessed or counted."""
     return secrets.token_urlsafe(12)
 
 
@@ -33,7 +34,7 @@ class CaptureTarget(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), index=True)
     # Goes in the capture link. Random so links can't be guessed by counting.
-    public_id: Mapped[str] = mapped_column(String(32), unique=True, index=True, default=_public_id)
+    public_id: Mapped[str] = mapped_column(String(32), unique=True, index=True, default=new_public_id)
     name: Mapped[str] = mapped_column(String(100))
     connection_id: Mapped[int] = mapped_column(ForeignKey("ifs_connections.id"))
     # Path under the connection's base URL. May contain {request_id}.

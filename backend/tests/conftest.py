@@ -40,6 +40,15 @@ def fake_dns(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def reset_rate_limits():
+    from app.capture.router import LIMITERS
+
+    for limiter in LIMITERS:
+        limiter.reset()
+    yield
+
+
+@pytest.fixture(autouse=True)
 def clear_outbox():
     outbox.clear()
     yield
