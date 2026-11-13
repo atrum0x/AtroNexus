@@ -28,6 +28,8 @@ Only the Vercel frontend can call the backend: every request must carry the shar
 | 9 | SaaS step 2: sign-up, email sign-in, email verification, password reset | PR #3 |
 | 10 | SaaS step 3: team invitations and roles | PR #4 |
 | 11 | SaaS step 4: tools switched on and off per organization | PR #5 |
+| 12 | Progress notes (this file) | PR #5 |
+| 13 | SaaS step 5: usage counting and the overview dashboard | PR #6 |
 
 ## 1. Foundations
 
@@ -72,7 +74,7 @@ Only the Vercel frontend can call the backend: every request must carry the shar
 - Neon is used through its pooled (PgBouncer) host, so prepared statements are switched off (`prepare_threshold=None`).
 - Live sign-in failed at first because of the Vercel environment variables. `API_URL` now gets `https://` added and a trailing `/` removed, and the login form says which problem it is.
 
-## 5. SaaS steps 1 to 4
+## 5. SaaS steps 1 to 5
 
 The plan: customers sign up themselves, each company has its own space and dashboard, and pays a monthly fee per tool (plus usage where a tool has a real cost per use). Payments come later.
 
@@ -116,6 +118,17 @@ The plan: customers sign up themselves, each company has its own space and dashb
 | SharePoint and OneDrive documents | $39 / month |
 | Configuration change tracker | $59 / month |
 
+### Step 5: usage and dashboard (PR #6)
+
+- **Usage records** (`usage_events`): one row per counted use, saved together with the action. A capture sent to IFS counts as billable; a failed one is recorded but never billable. Rows are never changed, so any month can be recalculated.
+- **History:** existing captures were backfilled when the table was created, so the numbers start with real data.
+- **Dashboard** (the home page):
+  - a setup checklist (confirm email, switch on a tool, add a connection, create a capture page, invite the team) until it's all done
+  - usage per tool for the current month, with failures and last month for comparison
+  - the latest errors, each linking to where to fix it
+  - for owners and admins, an estimated cost for the month: the monthly fees of switched-on tools plus usage at the per-use price (placeholder prices; nothing charged)
+- Months are calendar months in UTC.
+
 ## Environment variables
 
 **Backend (Northflank):** `DATABASE_URL`, `JWT_SECRET`, `ENCRYPTION_KEY`, `INTERNAL_API_KEY`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_EMAIL` (optional), `APP_URL` (the Vercel address, used in email links), `EMAIL_BACKEND` (`console` or `resend`), and with Resend: `RESEND_API_KEY`, `EMAIL_FROM`.
@@ -133,7 +146,7 @@ The plan: customers sign up themselves, each company has its own space and dashb
 
 **Next SaaS steps:**
 
-5. Usage counting and an overview dashboard per organization.
+5. ~~Usage counting and an overview dashboard per organization.~~ Done in PR #6.
 6. Platform admin view: every customer, their tools and usage, suspending a customer.
 7. Hardening: block internal addresses as IFS URLs (SSRF), rate limits on sign-in, sign-up and public endpoints, a CAPTCHA on sign-up.
 
