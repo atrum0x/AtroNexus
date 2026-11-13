@@ -17,6 +17,7 @@ import truststore
 from app.config import get_settings
 from app.crypto import decrypt
 from app.ifs.models import IfsConnection
+from app.ifs.netguard import BlockedAddress, check_url
 
 # Tests replace this with an httpx.MockTransport.
 transport: httpx.BaseTransport | None = None
@@ -81,6 +82,7 @@ class IfsClient:
         if cached and cached[2] == version and cached[1] > time.time() + 30:
             return cached[0]
 
+        _guard(self.conn.token_url or "")
         try:
             with self._http() as http:
                 res = http.post(
@@ -121,6 +123,7 @@ class IfsClient:
         headers: dict[str, str] | None = None,
     ) -> IfsResponse:
         url = self.conn.base_url.rstrip("/") + path
+        _guard(url)
         all_headers = {"Accept": "application/json", **self._auth_headers(), **(headers or {})}
         try:
             with self._http() as http:
@@ -139,6 +142,14 @@ class IfsClient:
             except ValueError:
                 body = res.text
         return IfsResponse(res.status_code, res.headers, body)
+
+
+def _guard(url: str) -> None:
+    """Checked before every call, not just when saving: DNS answers can change."""
+    try:
+        check_url(url)
+    except BlockedAddress as exc:
+        raise IfsError(str(exc)) from exc
 
 
 def _error_text(res: httpx.Response) -> str:

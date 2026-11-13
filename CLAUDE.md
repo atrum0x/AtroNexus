@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Built: login, the IFS connector (shared building block), tool 1 (the capture page), and SaaS steps 1 (organizations and data separation), 2 (self-service sign-up, email sign-in, email verification, password reset), 3 (team invites and roles), 4 (per-tool switches), 5 (usage counting and the overview dashboard) and 6 (platform admin). Next SaaS step: hardening (SSRF guard for connection URLs, rate limits). No payments yet; pricing will be a monthly fee per tool, plus usage where a tool needs it. The design document `IFS Cloud Gap-Bridge Platform Tool Descriptions.md` is the source of truth for what gets built.
+Built: login, the IFS connector (shared building block), tool 1 (the capture page), and SaaS steps 1 (organizations and data separation), 2 (self-service sign-up, email sign-in, email verification, password reset), 3 (team invites and roles), 4 (per-tool switches), 5 (usage counting and the overview dashboard) and 6 (platform admin), and the SSRF guard from step 7. Still open from step 7: rate limits and a sign-up CAPTCHA. No payments yet; pricing will be a monthly fee per tool, plus usage where a tool needs it. The design document `IFS Cloud Gap-Bridge Platform Tool Descriptions.md` is the source of truth for what gets built.
 
 ## Stack and commands
 
@@ -68,6 +68,8 @@ Admin pages live in the `src/app/(admin)/` route group. With Cache Components on
 ## IFS connector (`backend/app/ifs/`)
 
 Every IFS call goes through `IfsClient` (`client.py`). It supports OAuth2 client credentials (IFS Cloud's default, tokens cached per connection until shortly before expiry) and basic auth. It raises `IfsError` with the message pulled from the IFS OData error body. Secrets are Fernet-encrypted (`app/crypto.py`) and never returned by the API: `IfsConnectionOut` has no secret field, and on update an empty secret keeps the saved one. Tests swap `app.ifs.client.transport` for an `httpx.MockTransport`.
+
+**Internal addresses are blocked (SSRF guard, `app/ifs/netguard.py`).** Customers type IFS addresses, so `check_url` requires https and refuses any host that resolves to a non-public address (loopback, private, link-local incl. 169.254.169.254, CGNAT, multicast, reserved; IPv4-mapped IPv6 unwrapped). It runs when a connection is saved (422 with a readable message) and again before every request in `IfsClient` (DNS can change); the client never follows redirects. Any new code that calls a customer-supplied URL must go through it. `ALLOW_PRIVATE_IFS_URLS=true` switches it off for local development with a fake IFS; never in production. Tests replace `netguard.resolve` with a fake DNS (`fake_dns` fixture). Known gap: DNS rebinding between the check and httpx's own lookup; closing it needs connecting to the checked IP.
 
 TLS is verified against the OS trust store (`truststore`), not certifi. Keep it that way: real IFS servers (e.g. the DSS UAT) send only their leaf certificate without the intermediate. Windows and macOS fetch the missing intermediate like browsers do, but certifi/OpenSSL fails with `unable to get local issuer certificate`. Linux doesn't fetch intermediates either, so the Docker image adds every `backend/certs/*.crt` to the system store (truststore reads it on Linux). The Sectigo intermediate for DSS UAT is there; see `backend/certs/README.md` to add others. Never turn verification off.
 

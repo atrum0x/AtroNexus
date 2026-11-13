@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     # Seconds to wait for IFS before giving up on a write-back.
     ifs_timeout_seconds: float = 20.0
 
+    # Lets IFS connections point at localhost and private networks, for local
+    # development against a fake IFS. Off in production: customers type these
+    # addresses, and internal ones would let them reach our network (SSRF).
+    allow_private_ifs_urls: bool = False
+
     # Shared secret between the frontend (Vercel) and this API. When set, every
     # request except /api/health must send it in X-Internal-Key, so only the
     # frontend can use the API. Leave unset for local development.
