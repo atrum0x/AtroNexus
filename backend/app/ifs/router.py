@@ -5,6 +5,7 @@ from app.crypto import encrypt
 from app.deps import DbSession, ManagerOnly, OrgId, VerifiedEmail, get_current_user
 from app.ifs.client import IfsClient, IfsError, forget_token
 from app.ifs.models import IfsConnection
+from app.ifs.netguard import BlockedAddress, check_url
 from app.ifs.schemas import CheckResult, IfsConnectionIn, IfsConnectionOut
 
 router = APIRouter(
@@ -44,7 +45,18 @@ def _get(db: DbSession, org_id: int, connection_id: int) -> IfsConnection:
     return conn
 
 
+def _check_addresses(body: IfsConnectionIn) -> None:
+    """Refuses internal addresses up front, with a message the user can act on."""
+    urls = [str(body.base_url)] + ([str(body.token_url)] if body.auth_type == "oauth2" and body.token_url else [])
+    for url in urls:
+        try:
+            check_url(url)
+        except BlockedAddress as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from None
+
+
 def _apply(conn: IfsConnection, body: IfsConnectionIn) -> None:
+    _check_addresses(body)
     conn.name = body.name.strip()
     conn.base_url = str(body.base_url).rstrip("/")
     conn.auth_type = body.auth_type

@@ -19,10 +19,24 @@ import app.models_registry  # noqa: E402, F401
 from app.accounts import get_or_create_org  # noqa: E402
 from app.db import Base, SessionLocal, engine  # noqa: E402
 from app.email.sender import outbox  # noqa: E402
+from app.ifs import netguard  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import User  # noqa: E402
 from app.security import hash_password  # noqa: E402
 from app.tools.service import set_enabled  # noqa: E402
+
+
+# Tests don't use real DNS: every host resolves to a public address unless a
+# test maps it (see tests/test_netguard.py).
+FAKE_DNS: dict[str, list[str]] = {}
+
+
+@pytest.fixture(autouse=True)
+def fake_dns(monkeypatch):
+    FAKE_DNS.clear()
+    monkeypatch.setattr(netguard, "resolve", lambda host, port: FAKE_DNS.get(host, ["93.184.216.34"]))
+    yield FAKE_DNS
+    FAKE_DNS.clear()
 
 
 @pytest.fixture(autouse=True)

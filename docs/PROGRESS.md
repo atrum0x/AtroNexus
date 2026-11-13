@@ -31,6 +31,7 @@ Only the Vercel frontend can call the backend: every request must carry the shar
 | 12 | Progress notes (this file) | PR #5 |
 | 13 | SaaS step 5: usage counting and the overview dashboard | PR #6 |
 | 14 | SaaS step 6: platform admin | PR #7 |
+| 15 | SaaS step 7 (part): IFS addresses must be public (SSRF guard) | PR #8 |
 
 ## 1. Foundations
 
@@ -138,9 +139,18 @@ The plan: customers sign up themselves, each company has its own space and dashb
 - **Suspend and reactivate**, with an optional reason that only the platform admin sees. Suspending blocks sign-in, ends sessions and stops the customer's links; nothing is deleted. The platform's own organization can't be suspended.
 - Fixed during testing: the suspend dialog now closes after it succeeds, and always sends the status shown on the button.
 
+### Step 7, first part: internal addresses blocked (PR #8)
+
+- Customers type their own IFS addresses, so the backend refuses any that would make it call an internal network: localhost, private ranges, link-local (including the cloud metadata service at `169.254.169.254`), shared/CGNAT, multicast and reserved addresses, in IPv4 and IPv6. Addresses must use `https://`.
+- Checked when a connection is saved (a clear error message) and again before every call to IFS, since a name can resolve differently later. Redirects aren't followed.
+- The live connections (DSS UAT and putedar-dev1) were checked with real DNS before release and pass.
+- `ALLOW_PRIVATE_IFS_URLS=true` turns the check off for local development with a fake IFS.
+- Known gap: a DNS server that changes its answer in the split second between the check and the connection (DNS rebinding). Closing it means connecting to the checked IP directly.
+- The rest of step 7 (rate limits, a sign-up CAPTCHA) is left for later, as decided.
+
 ## Environment variables
 
-**Backend (Northflank):** `DATABASE_URL`, `JWT_SECRET`, `ENCRYPTION_KEY`, `INTERNAL_API_KEY`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_EMAIL` (optional), `APP_URL` (the Vercel address, used in email links), `EMAIL_BACKEND` (`console` or `resend`), and with Resend: `RESEND_API_KEY`, `EMAIL_FROM`.
+**Backend (Northflank):** `DATABASE_URL`, `JWT_SECRET`, `ENCRYPTION_KEY`, `INTERNAL_API_KEY`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_EMAIL` (optional), `APP_URL` (the Vercel address, used in email links), `EMAIL_BACKEND` (`console` or `resend`), and with Resend: `RESEND_API_KEY`, `EMAIL_FROM`. `ALLOW_PRIVATE_IFS_URLS` must stay unset (false) in production.
 
 **Frontend (Vercel):** `API_URL` (the Northflank address, with `https://`), `INTERNAL_API_KEY` (the same value as on Northflank, never `NEXT_PUBLIC_`).
 
@@ -157,7 +167,7 @@ The plan: customers sign up themselves, each company has its own space and dashb
 
 5. ~~Usage counting and an overview dashboard per organization.~~ Done in PR #6.
 6. ~~Platform admin view: every customer, their tools and usage, suspending a customer.~~ Done in PR #7.
-7. Hardening: block internal addresses as IFS URLs (SSRF), rate limits on sign-in, sign-up and public endpoints, a CAPTCHA on sign-up.
+7. Hardening: ~~block internal addresses as IFS URLs (SSRF)~~ done in PR #8. Still open: rate limits on sign-in, sign-up and public endpoints, a CAPTCHA on sign-up.
 
 Later: payments (monthly subscription per switched-on tool, usage billed from the usage records), terms of service and privacy pages before public sign-up.
 

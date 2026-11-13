@@ -91,6 +91,8 @@ The database schema is created and upgraded automatically when the backend start
 
 - **Platform (`/platform`):** only the platform admin (the admin user from `.env`) sees it. It shows every customer organization with its owner, members, tools, usage and estimated revenue, and lets you suspend a customer (with a reason) or reactivate it. Suspending blocks sign-in and the customer's links; nothing is deleted.
 
+- **IFS addresses must be public:** a connection's base URL and token URL must use `https://` and point to a public internet address. Internal ones (localhost, private networks, the cloud metadata address) are refused when saving and again on every call. To test against a fake IFS on your own machine, set `ALLOW_PRIVATE_IFS_URLS=true` in `backend/.env` (never in production).
+
 How a sign-in works:
 
 1. The login form posts to a Next.js server action, which calls `POST /api/auth/login` on the backend.
