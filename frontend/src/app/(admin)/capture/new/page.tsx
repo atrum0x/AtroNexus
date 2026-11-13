@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import { getCaptureDefaults } from "@/api/generated/endpoints/capture/capture";
 import { listConnections } from "@/api/generated/endpoints/ifs-connections/ifs-connections";
+import { ManageOnly, MembersCantChange } from "@/components/manage-only";
 import { PageHeader, TableSkeleton } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -19,7 +20,9 @@ export default function NewCaptureTargetPage() {
       <Card>
         <CardContent>
           <Suspense fallback={<TableSkeleton />}>
-            <NewTargetForm />
+            <ManageOnly fallback={<MembersCantChange what="add capture pages" />}>
+              <NewTargetForm />
+            </ManageOnly>
           </Suspense>
         </CardContent>
       </Card>

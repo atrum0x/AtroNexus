@@ -24,11 +24,19 @@ const AUTH_TYPES = [
   { value: "basic", label: "Username and password (basic auth)" },
 ];
 
-export function ConnectionForm({ connection }: { connection?: IfsConnectionOut }) {
+export function ConnectionForm({
+  connection,
+  readOnly = false,
+}: {
+  connection?: IfsConnectionOut;
+  /** For members: shows the settings without a way to change them. */
+  readOnly?: boolean;
+}) {
   const [state, action, pending] = useActionState<ConnectionFormState, FormData>(
     saveConnection.bind(null, connection?.id ?? null),
     {},
   );
+  const locked = pending || readOnly;
   const v = { ...connection, ...state.values };
   const [authType, setAuthType] = useState<string>(v.auth_type ?? "oauth2");
   const isEdit = !!connection;
@@ -43,7 +51,7 @@ export function ConnectionForm({ connection }: { connection?: IfsConnectionOut }
       )}
 
       <Field label="Name" htmlFor="name" hint="For example the customer and environment: Acme production.">
-        <Input id="name" name="name" required defaultValue={v.name} disabled={pending} />
+        <Input id="name" name="name" required defaultValue={v.name} disabled={locked} />
       </Field>
 
       <Field
@@ -58,7 +66,7 @@ export function ConnectionForm({ connection }: { connection?: IfsConnectionOut }
           required
           placeholder="https://acme.ifs.cloud"
           defaultValue={v.base_url}
-          disabled={pending}
+          disabled={locked}
         />
       </Field>
 
@@ -68,7 +76,7 @@ export function ConnectionForm({ connection }: { connection?: IfsConnectionOut }
           items={AUTH_TYPES}
           value={authType}
           onValueChange={(value) => value && setAuthType(value)}
-          disabled={pending}
+          disabled={locked}
         >
           <SelectTrigger id="auth_type" className="w-full">
             <SelectValue />
@@ -96,7 +104,7 @@ export function ConnectionForm({ connection }: { connection?: IfsConnectionOut }
               type="url"
               required
               defaultValue={v.token_url ?? ""}
-              disabled={pending}
+              disabled={locked}
             />
           </Field>
           <Field
@@ -109,7 +117,7 @@ export function ConnectionForm({ connection }: { connection?: IfsConnectionOut }
               name="client_id"
               required
               defaultValue={v.client_id ?? ""}
-              disabled={pending}
+              disabled={locked}
             />
           </Field>
         </>
@@ -121,7 +129,7 @@ export function ConnectionForm({ connection }: { connection?: IfsConnectionOut }
             required
             autoComplete="off"
             defaultValue={v.username ?? ""}
-            disabled={pending}
+            disabled={locked}
           />
         </Field>
       )}
@@ -142,19 +150,21 @@ export function ConnectionForm({ connection }: { connection?: IfsConnectionOut }
           autoComplete="new-password"
           required={!isEdit}
           placeholder={isEdit ? "••••••••" : undefined}
-          disabled={pending}
+          disabled={locked}
         />
       </Field>
 
-      <div className="flex gap-2">
-        <Button type="submit" disabled={pending}>
-          {pending && <Loader2 className="animate-spin" />}
-          {isEdit ? "Save changes" : "Add connection"}
-        </Button>
-        <Button variant="ghost" render={<Link href="/connections" />} nativeButton={false}>
-          Cancel
-        </Button>
-      </div>
+      {!readOnly && (
+        <div className="flex gap-2">
+          <Button type="submit" disabled={locked}>
+            {pending && <Loader2 className="animate-spin" />}
+            {isEdit ? "Save changes" : "Add connection"}
+          </Button>
+          <Button variant="ghost" render={<Link href="/connections" />} nativeButton={false}>
+            Cancel
+          </Button>
+        </div>
+      )}
     </form>
   );
 }

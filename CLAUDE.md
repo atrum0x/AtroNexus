@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Built: login, the IFS connector (shared building block), tool 1 (the capture page), and SaaS steps 1 (organizations and data separation) and 2 (self-service sign-up, email sign-in, email verification, password reset). Next SaaS steps: team invites and roles, per-tool switches, usage metering, platform admin, hardening (SSRF guard for connection URLs, rate limits). No payments yet; pricing will be a monthly fee per tool, plus usage where a tool needs it. The design document `IFS Cloud Gap-Bridge Platform Tool Descriptions.md` is the source of truth for what gets built.
+Built: login, the IFS connector (shared building block), tool 1 (the capture page), and SaaS steps 1 (organizations and data separation), 2 (self-service sign-up, email sign-in, email verification, password reset) and 3 (team invites and roles). Next SaaS steps: per-tool switches, usage metering, platform admin, hardening (SSRF guard for connection URLs, rate limits). No payments yet; pricing will be a monthly fee per tool, plus usage where a tool needs it. The design document `IFS Cloud Gap-Bridge Platform Tool Descriptions.md` is the source of truth for what gets built.
 
 ## Stack and commands
 
@@ -29,13 +29,16 @@ Frontend on Vercel (root directory `frontend`), backend on Northflank (built fro
 
 ## Organizations (multi-tenancy)
 
-AtroNexus is a SaaS: each customer is an `Organization`, and everything a customer sets up belongs to one. `User`, `IfsConnection` and `CaptureTarget` have `organization_id`; captures belong through their target. A user is in exactly one organization and has a `role` (`owner`, `admin`, `member`, not enforced yet) and an `is_platform_admin` flag (the platform owner; the seeded admin has it and lives in the "AtroNexus" organization).
+AtroNexus is a SaaS: each customer is an `Organization`, and everything a customer sets up belongs to one. `User`, `IfsConnection` and `CaptureTarget` have `organization_id`; captures belong through their target. A user is in exactly one organization and has a `role`: `owner`, `admin` or `member` and an `is_platform_admin` flag (the platform owner; the seeded admin has it and lives in the "AtroNexus" organization).
 
 Rules for every admin endpoint, including new tools:
 - Take `org_id: OrgId` (`app/deps.py`), filter every list query by it, and set it on every row you create.
 - Load single rows through a helper that answers **404** when the row belongs to another organization (`_get`, `_get_target`, `get_org_connection`), never 403, so other customers' IDs can't be probed.
 - A reference to another row from a request body (e.g. a target's `connection_id`) must be checked against the organization too; otherwise one customer could use another's IFS credentials.
+- Endpoints that change settings or call out (save, delete, test) take `ManagerOnly` (`app/deps.py`, owners and admins); members can only read. Hide those controls for members in the frontend with `canManage()` (`src/lib/roles.ts`) or `<ManageOnly>` (`components/manage-only.tsx`); forms take `readOnly`.
 - Add a cross-organization test to `tests/test_organizations.py` (the `other_org_headers` fixture signs in to a second organization).
+
+Team (`app/team/`, frontend `/team`): owners and admins invite by email (`invitations` table, hashed one-time token, 7 days; a new invite to the same address revokes the old one; inviting needs a verified email). The public `/invite?token=` page creates the account in that organization with the invited role and a verified email. Rules in `app/team/service.py`: nobody changes or removes themselves, only owners touch owners or grant owner, an organization keeps at least one owner, and an email that already has an account can't be invited (one organization per account for now).
 
 A suspended organization (`status = "suspended"`) can't sign in (403), its tokens stop working, and its public links answer 404.
 

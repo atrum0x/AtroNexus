@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/", label: "Home", exact: true },
   { href: "/capture", label: "Capture pages", exact: false },
   { href: "/connections", label: "IFS connections", exact: false },
+  { href: "/team", label: "Team", exact: false },
 ];
 
 /** Reads the URL, so render it inside <Suspense> with <NavLinks /> as the fallback. */

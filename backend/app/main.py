@@ -9,6 +9,7 @@ from app.accounts import seed_platform_admin
 from app.capture import router as capture
 from app.config import get_settings
 from app.ifs import router as ifs
+from app.team import router as team
 from app.db import SessionLocal
 from app.internal import InternalKeyMiddleware
 
@@ -50,6 +51,8 @@ app.include_router(auth.router)
 app.include_router(ifs.router)
 app.include_router(capture.router)
 app.include_router(capture.public_router)
+app.include_router(team.router)
+app.include_router(team.public_router)
 
 
 @app.get("/api/health", tags=["meta"])
