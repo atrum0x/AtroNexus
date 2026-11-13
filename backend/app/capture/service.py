@@ -10,6 +10,8 @@ from app.capture.models import Capture, CaptureTarget
 from app.capture.schemas import CaptureSubmit
 from app.capture.template import render_body, render_path
 from app.ifs.client import IfsClient, IfsError
+from app.tools.catalog import CAPTURE
+from app.usage import service as usage
 
 STATUS_LABELS = {"captured": "Captured", "denied": "Denied", "unavailable": "Unavailable"}
 
@@ -56,9 +58,13 @@ def submit(
     except (IfsError, ValueError) as exc:
         capture.writeback_status = "failed"
         capture.writeback_error = getattr(exc, "message", str(exc))[:1000]
+        usage.record(db, target.organization_id, CAPTURE, usage.CAPTURE_FAILED, billable=False,
+                     ref=f"capture:{capture.id}")
     else:
         capture.writeback_status = "sent"
         capture.sent_at = datetime.now(timezone.utc)
+        usage.record(db, target.organization_id, CAPTURE, usage.CAPTURE_SENT, billable=True,
+                     ref=f"capture:{capture.id}")
     db.commit()
     return capture
 

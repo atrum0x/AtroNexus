@@ -1423,6 +1423,32 @@
         }
       }
     },
+    "/api/overview": {
+      "get": {
+        "tags": [
+          "overview"
+        ],
+        "summary": "Get Overview",
+        "operationId": "get_overview",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Overview"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/health": {
       "get": {
         "tags": [
@@ -1978,6 +2004,117 @@
         ],
         "title": "CheckResult"
       },
+      "ChecklistItem": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "done": {
+            "type": "boolean",
+            "title": "Done"
+          },
+          "link": {
+            "type": "string",
+            "title": "Link"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "done",
+          "link"
+        ],
+        "title": "ChecklistItem"
+      },
+      "CostEstimate": {
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/CostLine"
+            },
+            "type": "array",
+            "title": "Lines"
+          },
+          "total": {
+            "type": "string",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lines",
+          "total"
+        ],
+        "title": "CostEstimate"
+      },
+      "CostLine": {
+        "properties": {
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "monthly_fee": {
+            "type": "string",
+            "title": "Monthly Fee"
+          },
+          "usage_count": {
+            "type": "integer",
+            "title": "Usage Count"
+          },
+          "usage_price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usage Price"
+          },
+          "usage_unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usage Unit"
+          },
+          "usage_cost": {
+            "type": "string",
+            "title": "Usage Cost"
+          },
+          "total": {
+            "type": "string",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool",
+          "name",
+          "monthly_fee",
+          "usage_count",
+          "usage_price",
+          "usage_unit",
+          "usage_cost",
+          "total"
+        ],
+        "title": "CostLine"
+      },
       "ForgotPasswordRequest": {
         "properties": {
           "email": {
@@ -2409,6 +2546,89 @@
         ],
         "title": "OrganizationOut"
       },
+      "Overview": {
+        "properties": {
+          "month_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Month Start"
+          },
+          "usage": {
+            "items": {
+              "$ref": "#/components/schemas/ToolUsageOut"
+            },
+            "type": "array",
+            "title": "Usage"
+          },
+          "recent_errors": {
+            "items": {
+              "$ref": "#/components/schemas/RecentError"
+            },
+            "type": "array",
+            "title": "Recent Errors"
+          },
+          "estimate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CostEstimate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "checklist": {
+            "items": {
+              "$ref": "#/components/schemas/ChecklistItem"
+            },
+            "type": "array",
+            "title": "Checklist"
+          }
+        },
+        "type": "object",
+        "required": [
+          "month_start",
+          "usage",
+          "recent_errors",
+          "estimate",
+          "checklist"
+        ],
+        "title": "Overview"
+      },
+      "RecentError": {
+        "properties": {
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "link": {
+            "type": "string",
+            "title": "Link"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool",
+          "title",
+          "message",
+          "at",
+          "link"
+        ],
+        "title": "RecentError"
+      },
       "ResetPasswordRequest": {
         "properties": {
           "token": {
@@ -2582,6 +2802,44 @@
           "enabled"
         ],
         "title": "ToolSwitch"
+      },
+      "ToolUsageOut": {
+        "properties": {
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "succeeded": {
+            "type": "integer",
+            "title": "Succeeded"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          },
+          "last_month_succeeded": {
+            "type": "integer",
+            "title": "Last Month Succeeded"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool",
+          "name",
+          "enabled",
+          "succeeded",
+          "failed",
+          "last_month_succeeded"
+        ],
+        "title": "ToolUsageOut"
       },
       "UserOut": {
         "properties": {

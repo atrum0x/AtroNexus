@@ -145,6 +145,17 @@ def test_a_database_from_before_migrations_is_upgraded_with_its_data(client):
             "INSERT INTO ifs_connections (name, base_url, auth_type, secret_enc, created_at, updated_at) "
             "VALUES ('Old IFS', 'https://x', 'basic', 'e', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
         ))
+        conn.execute(text(
+            "INSERT INTO capture_targets (public_id, name, connection_id, endpoint_path, http_method, "
+            "body_template, enabled, created_at, updated_at) "
+            "VALUES ('p1', 'Old page', 1, '/x', 'POST', '{}', :yes, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+        ), {"yes": True})
+        conn.execute(text(
+            "INSERT INTO captures (target_id, request_id, status, captured_at, writeback_status, sent_at) "
+            "VALUES (1, 'R1', 'captured', CURRENT_TIMESTAMP, 'sent', CURRENT_TIMESTAMP), "
+            "(1, 'R2', 'denied', CURRENT_TIMESTAMP, 'failed', NULL), "
+            "(1, 'R3', 'denied', CURRENT_TIMESTAMP, 'pending', NULL)"
+        ))
 
     migrate.upgrade()
     migrate.upgrade()  # a second start changes nothing
@@ -157,3 +168,14 @@ def test_a_database_from_before_migrations_is_upgraded_with_its_data(client):
         [conn] = db.scalars(select(IfsConnection)).all()
         assert (org.name, old.organization_id, old.role, old.is_platform_admin) == ("AtroNexus", org.id, "owner", True)
         assert conn.organization_id == org.id
+
+        # Later migrations ran too: capture switched on (0005), usage backfilled (0006).
+        from app.models import OrganizationTool
+        from app.usage.models import UsageEvent
+
+        assert [(t.tool, t.enabled) for t in db.scalars(select(OrganizationTool)).all()] == [("capture", True)]
+        events = db.scalars(select(UsageEvent).order_by(UsageEvent.ref)).all()
+        assert [(e.ref, e.kind, e.billable, e.organization_id) for e in events] == [
+            ("capture:1", "capture.sent", True, org.id),
+            ("capture:2", "capture.failed", False, org.id),
+        ]
