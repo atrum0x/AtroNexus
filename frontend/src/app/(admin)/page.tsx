@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { getOverview } from "@/api/generated/endpoints/overview/overview";
 import type { ChecklistItem, CostEstimate, Overview, RecentError, ToolUsageOut } from "@/api/generated/models";
+import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth";
@@ -11,7 +12,7 @@ import { getCurrentUser } from "@/lib/auth";
 export default function DashboardPage() {
   return (
     <div className="grid gap-8">
-      <Suspense fallback={<div className="h-12 w-64 animate-pulse rounded-md bg-muted" />}>
+      <Suspense fallback={<div className="h-20 animate-pulse rounded-md bg-muted" />}>
         <Greeting />
       </Suspense>
       <Suspense fallback={<div className="h-64 animate-pulse rounded-xl bg-muted" />}>
@@ -24,10 +25,10 @@ export default function DashboardPage() {
 async function Greeting() {
   const user = await getCurrentUser();
   return (
-    <div className="grid gap-1">
-      <h1 className="text-2xl font-semibold tracking-tight">Welcome, {user.name ?? user.username ?? user.email}</h1>
-      <p className="text-sm text-muted-foreground">{user.organization.name}</p>
-    </div>
+    <PageHeader
+      title={`Welcome, ${user.name ?? user.username ?? user.email}`}
+      description={`${user.organization.name}: how your tools are doing this month.`}
+    />
   );
 }
 

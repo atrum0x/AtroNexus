@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 import { sendCapture, type CaptureInput } from "./actions";
+import { StatusBlock } from "./status-icon";
 
 type Step =
   | { kind: "locating" }
@@ -184,20 +185,21 @@ export function CaptureFlow({
   };
 
   return (
-    <div className="flex flex-col items-center gap-4 py-4 text-center">
+    <div className="flex flex-col items-center gap-6 py-2 text-center">
       <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
         {targetName}
       </p>
 
       {step.kind === "locating" && (
         <>
-          <Status icon={<MapPin className="size-8 animate-pulse text-primary" />} title="Finding your location">
+          <StatusBlock icon={MapPin} tone="active" motion="pulse" title="Finding your location">
             If your browser asks, choose <strong>Allow</strong>.
-          </Status>
+          </StatusBlock>
           {slow && (
             <Button
               variant="ghost"
-              className="w-full"
+              size="lg"
+              className="h-11 w-full"
               onClick={() =>
                 sendWithoutLocation("unavailable", "The location didn't arrive in time.")
               }
@@ -209,31 +211,37 @@ export function CaptureFlow({
       )}
 
       {step.kind === "sending" && (
-        <Status icon={<Loader2 className="size-8 animate-spin text-muted-foreground" />} title="Saving to IFS">
+        <StatusBlock icon={Loader2} tone="busy" motion="spin" title="Saving to IFS">
           This takes a few seconds.
-        </Status>
+        </StatusBlock>
       )}
 
       {step.kind === "done" && (
-        <Status
-          icon={<CheckCircle2 className="size-8 text-emerald-600" />}
+        <StatusBlock
+          icon={CheckCircle2}
+          tone="success"
           title={step.withLocation ? "Location captured" : "Saved without a location"}
         >
           You can close this tab and go back to IFS.
-        </Status>
+        </StatusBlock>
       )}
 
       {step.kind === "no-location" && (
         <>
-          <Status icon={<MapPinOff className="size-8 text-muted-foreground" />} title="No location yet">
+          <StatusBlock icon={MapPinOff} tone="warning" title="No location yet">
             {step.message}
-          </Status>
+          </StatusBlock>
           <div className="flex w-full flex-col gap-2">
-            <Button onClick={locate}>
+            <Button size="lg" className="h-11" onClick={locate}>
               <RotateCw />
               Try again
             </Button>
-            <Button variant="ghost" onClick={() => sendWithoutLocation(step.reason, step.message)}>
+            <Button
+              variant="ghost"
+              size="lg"
+              className="h-11"
+              onClick={() => sendWithoutLocation(step.reason, step.message)}
+            >
               Continue without location
             </Button>
           </div>
@@ -242,10 +250,10 @@ export function CaptureFlow({
 
       {step.kind === "failed" && (
         <>
-          <Status icon={<XCircle className="size-8 text-destructive" />} title="IFS didn't accept it">
+          <StatusBlock icon={XCircle} tone="error" title="IFS didn't accept it">
             {step.message}
-          </Status>
-          <Button className="w-full" onClick={() => void send(step.input)}>
+          </StatusBlock>
+          <Button size="lg" className="h-11 w-full" onClick={() => void send(step.input)}>
             <RotateCw />
             Try again
           </Button>
@@ -254,25 +262,5 @@ export function CaptureFlow({
 
       <p className="font-mono text-xs text-muted-foreground">Request {requestId}</p>
     </div>
-  );
-}
-
-function Status({
-  icon,
-  title,
-  children,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <>
-      {icon}
-      <div className="grid gap-1">
-        <h1 className="text-lg font-semibold">{title}</h1>
-        <p className="text-sm text-muted-foreground">{children}</p>
-      </div>
-    </>
   );
 }
