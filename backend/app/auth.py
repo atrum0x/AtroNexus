@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
-from app.deps import CurrentUser, DbSession
-from app.models import User
+from app.deps import SUSPENDED_MESSAGE, CurrentUser, DbSession
+from app.models import ORG_ACTIVE, User
 from app.schemas import LoginRequest, TokenResponse, UserOut
 from app.security import create_access_token, verify_password
 
@@ -18,6 +18,8 @@ def login(body: LoginRequest, db: DbSession) -> TokenResponse:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
         )
+    if user.organization.status != ORG_ACTIVE:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, SUSPENDED_MESSAGE)
     token, expires_in = create_access_token(user.username)
     return TokenResponse(access_token=token, expires_in=expires_in)
 

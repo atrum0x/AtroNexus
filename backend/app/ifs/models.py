@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Integer, String
+from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base, UtcDateTime
@@ -16,6 +16,7 @@ class IfsConnection(Base):
     __tablename__ = "ifs_connections"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), index=True)
     name: Mapped[str] = mapped_column(String(100))
     base_url: Mapped[str] = mapped_column(String(500))
     # "oauth2" (client credentials, the IFS Cloud default) or "basic".

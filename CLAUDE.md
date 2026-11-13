@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Built: login, the IFS connector (shared building block) and tool 1, the capture page. The design document `IFS Cloud Gap-Bridge Platform Tool Descriptions.md` is the source of truth for what gets built.
+Built: login, the IFS connector (shared building block), tool 1 (the capture page), and step 1 of the SaaS plan (organizations and data separation). Next SaaS steps: email sign-in and self-service sign-up, team invites and roles, per-tool switches, usage metering, platform admin, hardening (SSRF guard for connection URLs, rate limits). No payments yet; pricing will be a monthly fee per tool, plus usage where a tool needs it. The design document `IFS Cloud Gap-Bridge Platform Tool Descriptions.md` is the source of truth for what gets built.
 
 ## Stack and commands
 
-- `backend/`: FastAPI, SQLAlchemy (SQLite by default), PyJWT, pwdlib (argon2), managed with `uv`. Copy `.env.example` to `.env` first; `JWT_SECRET` (32+ chars) and `ENCRYPTION_KEY` (a Fernet key, encrypts stored IFS secrets; changing it makes them unreadable) are required. `ADMIN_USERNAME`/`ADMIN_PASSWORD` seed a user on startup if it doesn't exist. Tables come from `Base.metadata.create_all` (no migrations yet). `DATABASE_URL` takes SQLite (local default) or Postgres; production uses Neon through its pooled (`-pooler`, PgBouncer) host. `app/db.py` rewrites `postgres://` URLs to the psycopg driver and sets `prepare_threshold=None`, because prepared statements break behind a transaction pooler. Keep that. Run the tests against Postgres with `TEST_DATABASE_URL=postgres://... uv run pytest` (they drop all tables). They pass on Postgres 18 via PGlite (`npx @electric-sql/pglite-socket`), but no test has run against Neon itself.
+- `backend/`: FastAPI, SQLAlchemy (SQLite by default), PyJWT, pwdlib (argon2), managed with `uv`. Copy `.env.example` to `.env` first; `JWT_SECRET` (32+ chars) and `ENCRYPTION_KEY` (a Fernet key, encrypts stored IFS secrets; changing it makes them unreadable) are required. `ADMIN_USERNAME`/`ADMIN_PASSWORD` seed a user on startup if it doesn't exist. The schema is managed by Alembic (`backend/migrations/`), and the app runs `upgrade head` on startup (`app/migrate.py`). A database from before migrations (tables but no version) is stamped at `0001`, which matches that original schema. After changing a model: `uv run alembic revision --autogenerate -m "..."`, then fix the file by hand where existing rows need data (see `0002_organizations.py`: add nullable, fill, then NOT NULL). A new model module must be imported in `app/models_registry.py`. `test_migrations_match_the_models` fails when a model change has no migration. `DATABASE_URL` takes SQLite (local default) or Postgres; production uses Neon through its pooled (`-pooler`, PgBouncer) host. `app/db.py` rewrites `postgres://` URLs to the psycopg driver and sets `prepare_threshold=None`, because prepared statements break behind a transaction pooler. Keep that. Run the tests against Postgres with `TEST_DATABASE_URL=postgres://... uv run pytest` (they drop all tables, including `alembic_version`). They pass on Postgres 18 via PGlite (`npx @electric-sql/pglite-socket`), but no test has run against Neon itself.
 
 ## Deployment
 
@@ -16,7 +16,7 @@ Frontend on Vercel (root directory `frontend`), backend on Northflank (built fro
   ```bash
   uv run uvicorn app.main:app --reload --port 8000   # API, docs at /docs
   uv run pytest                                      # tests
-  uv run python -m app.cli create-user <username>    # add a user / reset password
+  uv run python -m app.cli create-user <username> [--org "Company"] [--platform-admin]   # add a user / reset password
   ```
 - `frontend/`: Next.js 16 (App Router, Cache Components on), Tailwind v4, shadcn/ui (`base-nova` style, built on Base UI, not Radix). Set `API_URL` in `.env.local` (see `.env.example`). Read `frontend/AGENTS.md`: this Next version differs from older ones (e.g. `middleware.ts` is now `src/proxy.ts`), and its docs are in `node_modules/next/dist/docs/`. Fonts: `layout.tsx` loads Geist into `--font-geist-sans`/`--font-geist-mono`, and `globals.css` maps `--font-sans` to them. `shadcn init` writes the self-referencing `--font-sans: var(--font-sans)`, which silently falls back to serif, so check that line after running it.
   ```bash
@@ -26,6 +26,18 @@ Frontend on Vercel (root directory `frontend`), backend on Northflank (built fro
   npm run gen:api   # regenerate the API client (backend server doesn't need to be running)
   npx shadcn@latest add <component>
   ```
+
+## Organizations (multi-tenancy)
+
+AtroNexus is a SaaS: each customer is an `Organization`, and everything a customer sets up belongs to one. `User`, `IfsConnection` and `CaptureTarget` have `organization_id`; captures belong through their target. A user is in exactly one organization and has a `role` (`owner`, `admin`, `member`, not enforced yet) and an `is_platform_admin` flag (the platform owner; the seeded admin has it and lives in the "AtroNexus" organization).
+
+Rules for every admin endpoint, including new tools:
+- Take `org_id: OrgId` (`app/deps.py`), filter every list query by it, and set it on every row you create.
+- Load single rows through a helper that answers **404** when the row belongs to another organization (`_get`, `_get_target`, `get_org_connection`), never 403, so other customers' IDs can't be probed.
+- A reference to another row from a request body (e.g. a target's `connection_id`) must be checked against the organization too; otherwise one customer could use another's IFS credentials.
+- Add a cross-organization test to `tests/test_organizations.py` (the `other_org_headers` fixture signs in to a second organization).
+
+A suspended organization (`status = "suspended"`) can't sign in (403), its tokens stop working, and its public links answer 404.
 
 ## Generated API client (Orval)
 

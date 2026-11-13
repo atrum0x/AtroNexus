@@ -4,8 +4,12 @@
  * AtroNexus API
  * OpenAPI spec version: 0.1.0
  */
+import type { OrganizationOut } from './organizationOut';
 
 export interface UserOut {
   id: number;
   username: string;
+  role: string;
+  is_platform_admin: boolean;
+  organization: OrganizationOut;
 }

@@ -49,5 +49,10 @@ export default function HomePage() {
 
 async function Greeting() {
   const user = await getCurrentUser();
-  return <h1 className="text-2xl font-semibold tracking-tight">Welcome, {user.username}</h1>;
+  return (
+    <div className="grid gap-1">
+      <h1 className="text-2xl font-semibold tracking-tight">Welcome, {user.username}</h1>
+      <p className="text-sm text-muted-foreground">{user.organization.name}</p>
+    </div>
+  );
 }

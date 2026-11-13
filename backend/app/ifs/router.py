@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 
 from app.crypto import encrypt
-from app.deps import DbSession, get_current_user
+from app.deps import DbSession, OrgId, get_current_user
 from app.ifs.client import IfsClient, IfsError, forget_token
 from app.ifs.models import IfsConnection
 from app.ifs.schemas import CheckResult, IfsConnectionIn, IfsConnectionOut
@@ -29,8 +29,16 @@ def _out(conn: IfsConnection) -> IfsConnectionOut:
     )
 
 
-def _get(db: DbSession, connection_id: int) -> IfsConnection:
+def get_org_connection(db: DbSession, org_id: int, connection_id: int) -> IfsConnection | None:
+    """The connection, or None when it doesn't exist or belongs to another organization."""
     conn = db.get(IfsConnection, connection_id)
+    if conn is None or conn.organization_id != org_id:
+        return None
+    return conn
+
+
+def _get(db: DbSession, org_id: int, connection_id: int) -> IfsConnection:
+    conn = get_org_connection(db, org_id, connection_id)
     if conn is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Connection not found")
     return conn
@@ -53,18 +61,22 @@ def _apply(conn: IfsConnection, body: IfsConnectionIn) -> None:
 
 
 @router.get("", response_model=list[IfsConnectionOut])
-def list_connections(db: DbSession) -> list[IfsConnectionOut]:
-    rows = db.scalars(select(IfsConnection).order_by(IfsConnection.name)).all()
+def list_connections(db: DbSession, org_id: OrgId) -> list[IfsConnectionOut]:
+    rows = db.scalars(
+        select(IfsConnection)
+        .where(IfsConnection.organization_id == org_id)
+        .order_by(IfsConnection.name)
+    ).all()
     return [_out(c) for c in rows]
 
 
 @router.post("", response_model=IfsConnectionOut, status_code=status.HTTP_201_CREATED)
-def create_connection(body: IfsConnectionIn, db: DbSession) -> IfsConnectionOut:
+def create_connection(body: IfsConnectionIn, db: DbSession, org_id: OrgId) -> IfsConnectionOut:
     if not body.secret:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, "Enter the client secret or password."
         )
-    conn = IfsConnection()
+    conn = IfsConnection(organization_id=org_id)
     _apply(conn, body)
     db.add(conn)
     db.commit()
@@ -72,13 +84,15 @@ def create_connection(body: IfsConnectionIn, db: DbSession) -> IfsConnectionOut:
 
 
 @router.get("/{connection_id}", response_model=IfsConnectionOut)
-def get_connection(connection_id: int, db: DbSession) -> IfsConnectionOut:
-    return _out(_get(db, connection_id))
+def get_connection(connection_id: int, db: DbSession, org_id: OrgId) -> IfsConnectionOut:
+    return _out(_get(db, org_id, connection_id))
 
 
 @router.put("/{connection_id}", response_model=IfsConnectionOut)
-def update_connection(connection_id: int, body: IfsConnectionIn, db: DbSession) -> IfsConnectionOut:
-    conn = _get(db, connection_id)
+def update_connection(
+    connection_id: int, body: IfsConnectionIn, db: DbSession, org_id: OrgId
+) -> IfsConnectionOut:
+    conn = _get(db, org_id, connection_id)
     _apply(conn, body)
     db.commit()
     forget_token(conn.id)
@@ -86,10 +100,10 @@ def update_connection(connection_id: int, body: IfsConnectionIn, db: DbSession) 
 
 
 @router.delete("/{connection_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_connection(connection_id: int, db: DbSession) -> None:
+def delete_connection(connection_id: int, db: DbSession, org_id: OrgId) -> None:
     from app.capture.models import CaptureTarget
 
-    conn = _get(db, connection_id)
+    conn = _get(db, org_id, connection_id)
     in_use = db.scalar(
         select(func.count()).select_from(CaptureTarget).where(CaptureTarget.connection_id == conn.id)
     )
@@ -103,8 +117,8 @@ def delete_connection(connection_id: int, db: DbSession) -> None:
 
 
 @router.post("/{connection_id}/test", response_model=CheckResult)
-def test_connection(connection_id: int, db: DbSession) -> CheckResult:
-    conn = _get(db, connection_id)
+def test_connection(connection_id: int, db: DbSession, org_id: OrgId) -> CheckResult:
+    conn = _get(db, org_id, connection_id)
     client = IfsClient(conn)
     try:
         if conn.auth_type == "oauth2":

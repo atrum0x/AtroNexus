@@ -26,6 +26,7 @@ export * from './ifsConnectionOut';
 export * from './ifsConnectionOutAuthType';
 export * from './listCapturesParams';
 export * from './loginRequest';
+export * from './organizationOut';
 export * from './tokenResponse';
 export * from './userOut';
 export * from './validationError';

@@ -1535,6 +1535,24 @@
         ],
         "title": "LoginRequest"
       },
+      "OrganizationOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "OrganizationOut"
+      },
       "TokenResponse": {
         "properties": {
           "access_token": {
@@ -1567,12 +1585,26 @@
           "username": {
             "type": "string",
             "title": "Username"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "is_platform_admin": {
+            "type": "boolean",
+            "title": "Is Platform Admin"
+          },
+          "organization": {
+            "$ref": "#/components/schemas/OrganizationOut"
           }
         },
         "type": "object",
         "required": [
           "id",
-          "username"
+          "username",
+          "role",
+          "is_platform_admin",
+          "organization"
         ],
         "title": "UserOut"
       },
