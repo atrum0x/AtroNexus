@@ -7,10 +7,14 @@ import {
   LayoutDashboard,
   LogOut,
   MapPin,
+  Monitor,
+  Moon,
   PlugZap,
+  Sun,
   Users,
   type LucideIcon,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTransition } from "react";
@@ -23,6 +27,8 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -168,6 +174,29 @@ function NavSkeleton() {
   );
 }
 
+const THEMES = [
+  { value: "light", label: "Light", icon: Sun },
+  { value: "dark", label: "Dark", icon: Moon },
+  { value: "system", label: "Same as device", icon: Monitor },
+];
+
+function ThemeChoice() {
+  const { theme, setTheme } = useTheme();
+  return (
+    <DropdownMenuGroup>
+      <DropdownMenuLabel>Appearance</DropdownMenuLabel>
+      <DropdownMenuRadioGroup value={theme ?? "system"} onValueChange={(value) => setTheme(String(value))}>
+        {THEMES.map((t) => (
+          <DropdownMenuRadioItem key={t.value} value={t.value} closeOnClick={false}>
+            <t.icon />
+            {t.label}
+          </DropdownMenuRadioItem>
+        ))}
+      </DropdownMenuRadioGroup>
+    </DropdownMenuGroup>
+  );
+}
+
 function UserMenu({ data }: { data: SidebarData }) {
   const { isMobile } = useSidebar();
   const [signingOut, startSignOut] = useTransition();
@@ -215,6 +244,8 @@ function UserMenu({ data }: { data: SidebarData }) {
                 {data.organization} · {ROLE_LABELS[data.role] ?? data.role}
               </DropdownMenuLabel>
             </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <ThemeChoice />
             <DropdownMenuSeparator />
             <DropdownMenuItem disabled={signingOut} onClick={() => startSignOut(() => logout())}>
               <LogOut />

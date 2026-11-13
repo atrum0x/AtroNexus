@@ -15,7 +15,7 @@ export function PageHeader({
   back?: { href: string; label: string };
 }) {
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-3 border-b pb-6">
       {back && (
         <Link
           href={back.href}
@@ -26,11 +26,13 @@ export function PageHeader({
         </Link>
       )}
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="grid gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-          {description && <p className="text-sm text-muted-foreground">{description}</p>}
+        <div className="grid min-w-0 gap-1.5">
+          <h1 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">{title}</h1>
+          {description && (
+            <p className="max-w-2xl text-sm text-pretty text-muted-foreground sm:text-base">{description}</p>
+          )}
         </div>
-        {action}
+        {action && <div className="shrink-0">{action}</div>}
       </div>
     </div>
   );

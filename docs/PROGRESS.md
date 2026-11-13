@@ -33,6 +33,7 @@ Only the Vercel frontend can call the backend: every request must carry the shar
 | 14 | SaaS step 6: platform admin | PR #7 |
 | 15 | SaaS step 7 (part): IFS addresses must be public (SSRF guard) | PR #8 |
 | 16 | Sidebar navigation (shadcn) | PR #9 |
+| 17 | Light/dark mode, sharper headings, capture page polish | PR #10 |
 
 ## 1. Foundations
 
@@ -152,6 +153,10 @@ The plan: customers sign up themselves, each company has its own space and dashb
 ## 6. Interface
 
 - **Sidebar** (PR #9), based on shadcn's `sidebar-07`: the AtroNexus mark and organization at the top; Dashboard; a Tools section (Capture pages while it's on, All tools); an Organization section (IFS connections, Team); Platform → Customers for the platform admin; the signed-in user at the bottom with a menu (organization, role, Sign out). It collapses to icons with the header button or Ctrl/Cmd+B and stays collapsed while you move between pages; on phones it's a drawer that closes after you pick a page. A slim header shows the collapse button and a breadcrumb.
+
+- **Light/dark mode** (PR #10): in the sidebar's user menu, under Appearance: Light, Dark, or Same as device (the default). Remembered in the browser. The public capture page and the sign-in pages follow it too.
+- **Headings:** every page title is larger on wider screens, with a short description and a line under it; the dashboard uses the same heading.
+- **Capture page on phones:** the AtroNexus mark above the card, a coloured status circle (blue while looking, green when saved, amber without a location, red when IFS refused), larger headings, full-width buttons at least 44px tall, and room for the iPhone home bar.
 
 ## Environment variables
 
