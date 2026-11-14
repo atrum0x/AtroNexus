@@ -57,7 +57,7 @@ async function Organization({ params }: { params: Promise<{ id: string }> }) {
             {org.is_platform_org && <Badge variant="outline">Your organization</Badge>}
           </span>
         }
-        description={`Joined ${day(org.created_at)} · ${org.connections} IFS connection${org.connections === 1 ? "" : "s"} · ${org.capture_pages} capture page${org.capture_pages === 1 ? "" : "s"} · ${usd(org.estimated_revenue)} estimated this month`}
+        description={`Joined ${day(org.created_at)} · ${org.connections} IFS connection${org.connections === 1 ? "" : "s"} · ${org.capture_pages} location page${org.capture_pages === 1 ? "" : "s"} · ${usd(org.estimated_revenue)} estimated this month`}
         back={{ href: "/platform", label: "Platform" }}
         action={!org.is_platform_org && <StatusButton orgId={org.id} name={org.name} suspended={suspended} />}
       />

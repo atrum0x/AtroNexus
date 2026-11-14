@@ -77,7 +77,7 @@ def _capture_out(c: Capture) -> CaptureOut:
 def _get_target(db: DbSession, org_id: int, target_id: int) -> CaptureTarget:
     target = db.get(CaptureTarget, target_id)
     if target is None or target.organization_id != org_id:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Capture page not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Location page not found")
     return target
 
 
@@ -146,7 +146,7 @@ def delete_capture_target(target_id: int, db: DbSession, org_id: OrgId) -> None:
     if used:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            "This capture page has captures in the log. Turn it off instead of deleting it.",
+            "This location page has captures in the log. Turn it off instead of deleting it.",
         )
     db.delete(target)
     db.commit()
@@ -272,7 +272,7 @@ def submit_capture(
     enforce(
         page_submit_limiter,
         f"target:{target.id}",
-        "This capture page is getting too many submissions right now. Try again later.",
+        "This location page is getting too many submissions right now. Try again later.",
     )
     # The page posts through the Next.js server, which passes the browser's
     # address in X-Client-IP. See app/internal.py for when it's trusted.

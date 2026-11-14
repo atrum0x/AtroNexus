@@ -13,14 +13,14 @@ export default function NewCaptureTargetPage() {
   return (
     <div className="grid max-w-2xl gap-6">
       <PageHeader
-        title="New capture page"
+        title="New location page"
         description="Choose the IFS connection, and where in IFS the result goes."
-        back={{ href: "/capture", label: "Capture pages" }}
+        back={{ href: "/capture", label: "Location capture" }}
       />
       <Card>
         <CardContent>
           <Suspense fallback={<TableSkeleton />}>
-            <ManageOnly fallback={<MembersCantChange what="add capture pages" />}>
+            <ManageOnly fallback={<MembersCantChange what="add location pages" />}>
               <NewTargetForm />
             </ManageOnly>
           </Suspense>

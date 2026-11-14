@@ -74,13 +74,13 @@ async function CaptureTarget({
     <>
       <PageHeader
         title={target.name}
-        back={{ href: "/capture", label: "Capture pages" }}
+        back={{ href: "/capture", label: "Location capture" }}
       />
 
       {justCreated && (
         <Alert className="max-w-2xl">
           <CheckCircle2 />
-          <AlertTitle>Capture page created</AlertTitle>
+          <AlertTitle>Location page created</AlertTitle>
           <AlertDescription>
             Put the link below in your IFS custom command.
           </AlertDescription>
@@ -110,7 +110,7 @@ async function CaptureTarget({
                   action={renewLink.bind(null, id)}
                   tone="neutral"
                   label="New link"
-                  title="Give this capture page a new link?"
+                  title="Give this location page a new link?"
                   description="Every link with the current address stops working at once, including ones already sent. Then update the URL in your IFS custom command to the new link, or new captures from IFS will fail."
                 />
               </div>
@@ -131,7 +131,7 @@ async function CaptureTarget({
             />
             {!manager && (
               <div className="mt-4">
-                <MembersCantChange what="change, test or delete capture pages" />
+                <MembersCantChange what="change, test or delete location pages" />
               </div>
             )}
           </CardContent>
@@ -166,7 +166,7 @@ async function CaptureTarget({
       {manager && (
         <Card className="max-w-2xl">
           <CardHeader>
-            <CardTitle>Delete capture page</CardTitle>
+            <CardTitle>Delete location page</CardTitle>
             <CardDescription>
               Only possible before it has any captures. After that, turn it off
               instead.

@@ -15,7 +15,7 @@ import {
 
 const SECTIONS: Record<string, string> = {
   "": "Dashboard",
-  capture: "Capture pages",
+  capture: "Location capture",
   approvals: "Approvals",
   messaging: "Messaging",
   connections: "IFS connections",

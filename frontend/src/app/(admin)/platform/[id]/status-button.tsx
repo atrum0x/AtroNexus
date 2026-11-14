@@ -45,7 +45,7 @@ export function StatusButton({ orgId, name, suspended }: { orgId: number; name: 
               <AlertDialogDescription>
                 {suspended
                   ? "Its people can sign in again and its links start working. Nothing was deleted while it was suspended."
-                  : "Nobody in it can sign in, everyone signed in is signed out, and its links (such as capture links) stop working. Nothing is deleted; you can reactivate it."}
+                  : "Nobody in it can sign in, everyone signed in is signed out, and its links (such as location capture links) stop working. Nothing is deleted; you can reactivate it."}
               </AlertDialogDescription>
             </AlertDialogHeader>
             {!suspended && (

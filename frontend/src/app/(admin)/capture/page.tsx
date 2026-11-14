@@ -25,14 +25,14 @@ export default function CapturePage() {
   return (
     <div className="grid gap-8">
       <PageHeader
-        title="Capture pages"
+        title="Location capture"
         description="Each one is a link that IFS opens from a custom command. The page reads the user's location, IP address and device, and writes them to IFS."
         action={
           <Suspense fallback={null}>
             <ManageOnly>
               <Button render={<Link href="/capture/new" />} nativeButton={false}>
                 <Plus />
-                New capture page
+                New location page
               </Button>
             </ManageOnly>
           </Suspense>
@@ -65,11 +65,11 @@ async function TargetsTable() {
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-muted-foreground">
-          No capture pages yet. Add an{" "}
+          No location pages yet. Add an{" "}
           <Link href="/connections" className="underline">
             IFS connection
           </Link>{" "}
-          first, then create a capture page that uses it.
+          first, then create a location page that uses it.
         </CardContent>
       </Card>
     );

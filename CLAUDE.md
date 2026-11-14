@@ -73,7 +73,9 @@ Every IFS call goes through `IfsClient` (`client.py`). It supports OAuth2 client
 
 TLS is verified against the OS trust store (`truststore`), not certifi. Keep it that way: real IFS servers (e.g. the DSS UAT) send only their leaf certificate without the intermediate. Windows and macOS fetch the missing intermediate like browsers do, but certifi/OpenSSL fails with `unable to get local issuer certificate`. Linux doesn't fetch intermediates either, so the Docker image adds every `backend/certs/*.crt` to the system store (truststore reads it on Linux). The Sectigo intermediate for DSS UAT is there; see `backend/certs/README.md` to add others. Never turn verification off.
 
-## Tool 1: capture page (`backend/app/capture/`, `frontend/src/app/c/`)
+## Tool 1: location capture (`backend/app/capture/`, `frontend/src/app/c/`)
+
+Shown to customers as "Location capture", each setup as a "location page". The code, URLs (`/capture`, `/c/...`) and the tool code `capture` keep the old name so existing IFS links keep working.
 
 - A **capture target** says which connection to use, the IFS endpoint path (with `{request_id}`), PATCH or POST, and a JSON body template (`template.py`; a value that is exactly one placeholder keeps its type). Its random `public_id` goes in the link: `/c/<public_id>/<request id>`.
 - For PATCH, the backend GETs the record first. A 404 means the request ID doesn't exist in IFS, so nothing is written. Otherwise it sends the ETag as `If-Match`.

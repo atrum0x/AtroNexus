@@ -8,7 +8,7 @@ import { CAPTURE } from "@/lib/tools";
 export default function CaptureLayout({ children }: LayoutProps<"/capture">) {
   return (
     <Suspense fallback={<TableSkeleton />}>
-      <ToolGate code={CAPTURE} name="The capture page">
+      <ToolGate code={CAPTURE} name="Location capture">
         {children}
       </ToolGate>
     </Suspense>

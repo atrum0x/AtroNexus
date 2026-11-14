@@ -63,7 +63,7 @@ type NavItem = { href: string; label: string; icon: LucideIcon; exact?: boolean 
 function sections(data: SidebarData): { label?: string; items: NavItem[] }[] {
   const tools: NavItem[] = [];
   if (data.enabledTools.includes("capture")) {
-    tools.push({ href: "/capture", label: "Capture pages", icon: MapPin });
+    tools.push({ href: "/capture", label: "Location capture", icon: MapPin });
   }
   if (data.enabledTools.includes("approvals")) {
     tools.push({ href: "/approvals", label: "Approvals", icon: ClipboardCheck });

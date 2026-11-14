@@ -155,7 +155,7 @@ def _checklist(db: DbSession, org_id: int, me: User, enabled: set[str]) -> list[
     ]
     if CAPTURE in enabled:
         items.append(
-            ChecklistItem(key="capture_page", label="Create a capture page", done=has_capture_page,
+            ChecklistItem(key="capture_page", label="Create a location page", done=has_capture_page,
                           link="/capture/new")
         )
     items.append(ChecklistItem(key="team", label="Invite your team", done=team_size > 1 or invited > 0, link="/team"))
