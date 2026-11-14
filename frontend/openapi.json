@@ -1752,6 +1752,29 @@
         ]
       }
     },
+    "/api/approvals/package": {
+      "get": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Download Approval Package",
+        "description": "The IFS package, with the routing address pointing at this AtroNexus.",
+        "operationId": "download_approval_package",
+        "responses": {
+          "200": {
+            "description": "The IFS package as a zip",
+            "content": {
+              "application/zip": {}
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/approvals/requests": {
       "get": {
         "tags": [

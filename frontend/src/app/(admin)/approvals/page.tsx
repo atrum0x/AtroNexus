@@ -1,3 +1,4 @@
+import { Download } from "lucide-react";
 import { Suspense } from "react";
 
 import { getApprovalSetup, listApprovalRequests } from "@/api/generated/endpoints/approvals/approvals";
@@ -7,6 +8,7 @@ import { CheckButton } from "@/components/check-button";
 import { CopyField } from "@/components/copy-field";
 import { PageHeader, TableSkeleton } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -52,18 +54,29 @@ async function Setup() {
         <CardHeader>
           <CardTitle>1. Install the IFS package</CardTitle>
           <CardDescription>
-            Once per IFS environment. AtroNexus provides the package; its README has every step.
+            Once per IFS environment. The download has the code to build, the configuration package ready to
+            import, and a README with every step.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="grid gap-4">
+          <div>
+            {/* A plain link: it's a file download from a route handler, not a page. */}
+            <Button variant="outline" render={<a href="/api/approvals/package" download />} nativeButton={false}>
+              <Download />
+              Download IFS package
+            </Button>
+          </div>
           <ol className="grid list-decimal gap-1.5 pl-5 text-sm text-muted-foreground">
             <li>Build and deploy CAtxApprovalUtil and CAtxApprovalHandling (component PURCH).</li>
             <li>
               Add the object property <code className="font-mono text-xs">CAtxApproval / * / HMAC_SECRET</code>{" "}
               with a random value of 32+ characters. AtroNexus never needs it.
             </li>
-            <li>Import the event action and enable the event PUR_REQ_LINE_TO_BE_AUTHORIZED.</li>
-            <li>Import the routing rule and address C_ATX_APPROVAL_ADDR.</li>
+            <li>
+              Import <code className="font-mono text-xs">config/C_ATX_APPROVALS.zip</code> and enable the event
+              PUR_REQ_LINE_TO_BE_AUTHORIZED.
+            </li>
+            <li>Import the routing rule and address from config/connect; the address already points here.</li>
           </ol>
         </CardContent>
       </Card>

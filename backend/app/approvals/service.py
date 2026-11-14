@@ -34,7 +34,7 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-# --- The message from IFS (contract version 1, see ifs/approvals/README.md) ---
+# --- The message from IFS (contract version 1, see backend/ifs_package/approvals/README.md) ---
 
 
 class HookApprover(BaseModel):

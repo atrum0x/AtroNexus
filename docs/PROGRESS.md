@@ -177,7 +177,7 @@ The plan: customers sign up themselves, each company has its own space and dashb
 - Security checkpoint `PURCH_REQ_AUTHORIZATION` is off on your environment (and by default).
 
 **What was built:**
-- **IFS package** `ifs/approvals/` (code delivery, no tables): utility + projection `CAtxApprovalHandling`, an event action, routing rule and address, and a README with installation steps and the JSON contract. Tokens are HMAC-SHA256 with a secret only IFS knows, so AtroNexus can only act on approvals IFS asked for, as the person IFS named, within their limits.
+- **IFS package** `backend/ifs_package/approvals/` (code delivery, no tables): utility + projection `CAtxApprovalHandling`, an event action, routing rule and address, and a README with installation steps and the JSON contract. Tokens are HMAC-SHA256 with a secret only IFS knows, so AtroNexus can only act on approvals IFS asked for, as the person IFS named, within their limits.
 - **Secure links** (building block): hashed one-time tokens, expiry, revoke, open/used tracking.
 - **AtroNexus**: the hook (through the frontend, Bearer key), approval emails, the public approval page `/a/<token>` (live line from IFS, Approve with a confirm, Reject with IFS reject reasons and a note), the admin page `/approvals` (setup, hook key shown once, IFS package check, request log), usage counting, and the "Approve from email" tool switched on as available.
 

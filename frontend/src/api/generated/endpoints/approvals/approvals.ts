@@ -123,6 +123,30 @@ export const checkApprovalPackage = async ( options?: Parameters<typeof apiFetch
 );}
 
 
+export const getDownloadApprovalPackageUrl = () => {
+
+
+
+
+  return `/api/approvals/package`
+}
+
+/**
+ * The IFS package, with the routing address pointing at this AtroNexus.
+ * @summary Download Approval Package
+ */
+export const downloadApprovalPackage = async ( options?: Parameters<typeof apiFetch>[1]): Promise<Blob> => {
+
+  return apiFetch<Blob>(getDownloadApprovalPackageUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
 export const getListApprovalRequestsUrl = (params?: ListApprovalRequestsParams,) => {
   const normalizedParams = new URLSearchParams();
 

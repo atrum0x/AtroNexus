@@ -329,3 +329,39 @@ def test_other_organizations_cant_see_the_log(client, setup, other_org_headers):
 
 def test_tool_off_closes_the_admin_api(client, other_org_headers):
     assert client.get("/api/approvals/setup", headers=other_org_headers).status_code == 403
+
+
+def test_package_download_is_ready_to_import(client, auth_headers):
+    import io
+    import zipfile
+
+    res = client.get("/api/approvals/package", headers=auth_headers)
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "application/zip"
+    assert "atronexus-approvals-ifs-package.zip" in res.headers["content-disposition"]
+    files = zipfile.ZipFile(io.BytesIO(res.content))
+    names = set(files.namelist())
+    root = "atronexus-approvals/"
+    for expected in (
+        "README.md",
+        "workspace/purch/source/purch/database/CAtxApprovalUtil-Cust.plsql",
+        "workspace/purch/model/purch/CAtxApprovalHandling-Cust.projection",
+        "config/connect/RoutingRule_C_ATX_APPROVAL_RULE.xml",
+        "config/C_ATX_APPROVALS.zip",
+    ):
+        assert root + expected in names
+    assert not any("config/appconfig/" in n for n in names)
+
+    # The configuration package is a valid zip with the package XML at its root.
+    acp = zipfile.ZipFile(io.BytesIO(files.read(root + "config/C_ATX_APPROVALS.zip")))
+    assert "C_ATX_APPROVALS.xml" in acp.namelist()
+    assert any(n.startswith("Items/CustomEventAction-") for n in acp.namelist())
+
+    # The routing address points at this AtroNexus; the hook key isn't in it.
+    address = files.read(root + "config/connect/RoutingAddress_C_ATX_APPROVAL_ADDR.xml").decode()
+    assert "<REST_ROOT_END_POINT>http://localhost:3000/api/hooks/ifs/approvals</REST_ROOT_END_POINT>" in address
+    assert "PASTE_YOUR_ATRONEXUS_HOOK_KEY_HERE" in address
+
+
+def test_package_download_needs_the_tool(client, other_org_headers):
+    assert client.get("/api/approvals/package", headers=other_org_headers).status_code == 403

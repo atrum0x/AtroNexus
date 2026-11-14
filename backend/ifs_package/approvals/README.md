@@ -36,14 +36,14 @@ Problems in step 2 or 3 never block the requisition: they're written to the trac
 
 1. **Build and deploy the code** (`workspace/purch`) like any customization: put the four files in the customer's `purch` component (`Cust` layer), build, and deploy.
 2. **Set the secret.** *Application Base Setup → System Definitions → Object Properties*: add object `CAtxApproval`, key `*`, property `HMAC_SECRET`, with a random value of at least 32 characters. Keep it in IFS only; AtroNexus doesn't need it. Changing it invalidates links that haven't been used yet.
-3. **Import the event action.** Zip the contents of `config/appconfig` (the `C_ATX_APPROVALS.xml` file and the `Items` folder) and import it under *Solution Manager → Configuration → Application Configuration Packages*. Then make sure the event `PUR_REQ_LINE_TO_BE_AUTHORIZED` (LU `PurchReqLineApproval`) is **enabled** under *Solution Manager → Events*.
+3. **Import the event action.** Import `config/C_ATX_APPROVALS.zip` under *Solution Manager → Configuration → Application Configuration Packages*. (In the repository it's the folder `config/appconfig`; the download from AtroNexus has it zipped and ready.) Then make sure the event `PUR_REQ_LINE_TO_BE_AUTHORIZED` (LU `PurchReqLineApproval`) is **enabled** under *Solution Manager → Events*.
    - Or create the action by hand on that event: type *Execute Online SQL*, with
      ```sql
      BEGIN
         C_Atx_Approval_Util_API.Notify_Pr_Line('&REQUISITION_NO', '&LINE_NO', '&RELEASE_NO');
      END;
      ```
-4. **Import the routing address and rule** (`config/connect`) under *Solution Manager → Integration → IFS Connect*. Open `C_ATX_APPROVAL_ADDR` and paste the **hook key** from AtroNexus (*Approvals → Setup*) into the bearer token field.
+4. **Import the routing address and rule** (`config/connect`) under *Solution Manager → Integration → IFS Connect*. In the download from AtroNexus the address already points at your AtroNexus. Open `C_ATX_APPROVAL_ADDR` and paste the **hook key** from AtroNexus (*Approvals → step 2*) into the bearer token field.
 5. **Service user.** In AtroNexus, the IFS connection for approvals must sign in as a user that has a permission set granting the projection `CAtxApprovalHandling` and the system privilege `IMPERSONATE USER`.
 6. **Test.** In AtroNexus, *Approvals → Setup → Check IFS*. Then release a test requisition line that needs authorization: the approver should get an email within a minute or two.
 

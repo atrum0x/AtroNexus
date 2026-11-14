@@ -2,11 +2,11 @@ import json
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Path, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Path, Query, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from app.approvals import ifs_api, service
+from app.approvals import ifs_api, package, service
 from app.approvals.models import SENT, ApprovalRequest, ApprovalSetup
 from app.config import get_settings
 from app.deps import DbSession, ManagerOnly, OrgId, VerifiedEmail, get_current_user
@@ -185,6 +185,20 @@ def check_approval_package(db: DbSession, org_id: OrgId) -> CheckResult:
             )
         return CheckResult(ok=False, message=exc.message)
     return CheckResult(ok=True, message="IFS has the AtroNexus package, and the service user can use it.")
+
+
+@router.get(
+    "/package",
+    response_class=Response,
+    responses={200: {"content": {"application/zip": {}}, "description": "The IFS package as a zip"}},
+)
+def download_approval_package() -> Response:
+    """The IFS package, with the routing address pointing at this AtroNexus."""
+    return Response(
+        content=package.build_zip(_hook_url()),
+        media_type="application/zip",
+        headers={"Content-Disposition": 'attachment; filename="atronexus-approvals-ifs-package.zip"'},
+    )
 
 
 @router.get("/requests", response_model=list[RequestOut])
