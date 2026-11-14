@@ -41,7 +41,7 @@ export function CapturesTable({
         <TableHeader>
           <TableRow>
             <TableHead>When</TableHead>
-            {showTarget && <TableHead>Capture page</TableHead>}
+            {showTarget && <TableHead>Location page</TableHead>}
             <TableHead>Request ID</TableHead>
             <TableHead>Location</TableHead>
             <TableHead>IP / device</TableHead>

@@ -117,7 +117,7 @@ Customers write WhatsApp **templates**, and **scenarios** that map IFS values to
 
 Without these settings the hub still works for setting up: templates stay drafts with the reason shown, and sending answers "WhatsApp isn't connected".
 
-## Capture page (tool 1)
+## Location capture (tool 1)
 
 A button in IFS opens a link to this site. The page reads the user's location, IP address and device, and writes them back to the IFS record.
 

@@ -79,7 +79,7 @@ async function EditConnection({ params }: { params: Promise<{ id: string }> }) {
             <CardHeader>
               <CardTitle>Delete connection</CardTitle>
               <CardDescription>
-                Only possible when no capture page uses it.
+                Only possible when no location page uses it.
               </CardDescription>
             </CardHeader>
             <CardContent>

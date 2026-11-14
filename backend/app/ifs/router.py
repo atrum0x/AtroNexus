@@ -121,7 +121,7 @@ def delete_connection(connection_id: int, db: DbSession, org_id: OrgId) -> None:
     )
     if in_use:
         raise HTTPException(
-            status.HTTP_409_CONFLICT, "A capture page uses this connection. Delete or change it first."
+            status.HTTP_409_CONFLICT, "A location page uses this connection. Delete or change it first."
         )
     db.delete(conn)
     db.commit()

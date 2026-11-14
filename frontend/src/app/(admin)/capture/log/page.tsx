@@ -11,7 +11,7 @@ export default function CaptureLogPage() {
       <PageHeader
         title="Capture log"
         description="The latest 500 captures, and whether IFS accepted them."
-        back={{ href: "/capture", label: "Capture pages" }}
+        back={{ href: "/capture", label: "Location capture" }}
       />
       <Suspense fallback={<TableSkeleton />}>
         <Log />

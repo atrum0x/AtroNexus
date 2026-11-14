@@ -11,7 +11,7 @@ export const ROLE_LABELS: Record<string, string> = {
 
 export const ROLE_DESCRIPTIONS: Record<string, string> = {
   owner: "Everything, including managing owners",
-  admin: "Manage connections, capture pages and the team",
+  admin: "Manage connections, location pages and the team",
   member: "View everything, change nothing",
 };
 

@@ -13,7 +13,7 @@ import { ToolSwitch } from "./tool-switch";
 
 // Where each built tool is set up once it's on.
 const SETUP_LINKS: Record<string, { href: string; label: string }> = {
-  [CAPTURE]: { href: "/capture", label: "Set up capture pages" },
+  [CAPTURE]: { href: "/capture", label: "Set up location capture" },
   [APPROVALS]: { href: "/approvals", label: "Set up approvals" },
 };
 

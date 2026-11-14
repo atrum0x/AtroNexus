@@ -30,7 +30,7 @@ class Tool:
 TOOLS: tuple[Tool, ...] = (
     Tool(
         CAPTURE,
-        "Capture page",
+        "Location capture",
         "Opened from a button in IFS. Reads the user's location, IP address and device, and writes them to the IFS record.",
         Decimal("29"),
         available=True,

@@ -177,7 +177,7 @@ export function TargetForm({
         <div className="flex gap-2">
           <Button type="submit" disabled={pending || connections.length === 0}>
             {pending && <Loader2 className="animate-spin" />}
-            {target ? "Save changes" : "Create capture page"}
+            {target ? "Save changes" : "Create location page"}
           </Button>
           <Button variant="ghost" render={<Link href="/capture" />} nativeButton={false}>
             Cancel
