@@ -16,9 +16,8 @@ export interface ApprovalView {
   live: boolean;
   organization: string;
   approver_name: string;
-  requisition_no: string;
-  line_no: string;
-  release_no: string;
+  kind: string;
+  title: string;
   summary: ApprovalViewSummary;
   message?: string | null;
 }

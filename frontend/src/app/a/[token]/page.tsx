@@ -113,7 +113,7 @@ async function Approval({ params }: { params: Promise<{ token: string }> }) {
       <div className="grid gap-1 text-center">
         <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{view.organization}</p>
         <h1 className="text-xl font-semibold tracking-tight text-balance">
-          Purchase requisition {view.requisition_no}, line {view.line_no}
+          {view.title}
         </h1>
         <p className="text-sm text-muted-foreground">Waiting for your authorization, {view.approver_name}.</p>
       </div>

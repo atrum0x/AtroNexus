@@ -5,6 +5,7 @@ import { refresh } from "next/cache";
 import {
   checkApprovalPackage,
   createHookKey,
+  updateApprovalFlow,
   updateApprovalSetup,
 } from "@/api/generated/endpoints/approvals/approvals";
 import type { CheckResult } from "@/api/generated/models";
@@ -43,5 +44,15 @@ export async function checkPackage(): Promise<CheckResult> {
     return await checkApprovalPackage();
   } catch (err) {
     return { ok: false, message: errorMessage(err) };
+  }
+}
+
+export async function setFlowEnabled(code: string, enabled: boolean): Promise<{ error?: string }> {
+  try {
+    await updateApprovalFlow(code, { enabled });
+    refresh();
+    return {};
+  } catch (err) {
+    return { error: errorMessage(err) };
   }
 }

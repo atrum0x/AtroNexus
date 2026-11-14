@@ -1698,6 +1698,98 @@
         ]
       }
     },
+    "/api/approvals/flows": {
+      "get": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "List Approval Flows",
+        "description": "Every approval type, with the ones this organization uses switched on.",
+        "operationId": "list_approval_flows",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FlowOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Approval Flows"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/approvals/flows/{code}": {
+      "put": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Update Approval Flow",
+        "operationId": "update_approval_flow",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlowIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FlowOut"
+                  },
+                  "title": "Response Update Approval Flow"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/approvals/setup/hook-key": {
       "post": {
         "tags": [
@@ -1758,7 +1850,7 @@
           "approvals"
         ],
         "summary": "Download Approval Package",
-        "description": "The IFS package, with the routing address pointing at this AtroNexus.",
+        "description": "The IFS package for the approval types switched on, with the routing address pointing at this AtroNexus.",
         "operationId": "download_approval_package",
         "responses": {
           "200": {
@@ -2121,17 +2213,13 @@
             "type": "string",
             "title": "Approver Name"
           },
-          "requisition_no": {
+          "kind": {
             "type": "string",
-            "title": "Requisition No"
+            "title": "Kind"
           },
-          "line_no": {
+          "title": {
             "type": "string",
-            "title": "Line No"
-          },
-          "release_no": {
-            "type": "string",
-            "title": "Release No"
+            "title": "Title"
           },
           "summary": {
             "additionalProperties": true,
@@ -2158,9 +2246,8 @@
           "live",
           "organization",
           "approver_name",
-          "requisition_no",
-          "line_no",
-          "release_no",
+          "kind",
+          "title",
           "summary"
         ],
         "title": "ApprovalView",
@@ -2865,6 +2952,61 @@
         ],
         "title": "ErrorRow"
       },
+      "FlowIn": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled"
+        ],
+        "title": "FlowIn"
+      },
+      "FlowOut": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "ifs_events": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Ifs Events"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "description",
+          "available",
+          "enabled",
+          "ifs_events"
+        ],
+        "title": "FlowOut",
+        "description": "One approval type, and whether this organization uses it."
+      },
       "ForgotPasswordRequest": {
         "properties": {
           "email": {
@@ -2962,30 +3104,13 @@
           },
           "kind": {
             "type": "string",
+            "maxLength": 30,
             "title": "Kind"
           },
           "company": {
             "type": "string",
             "maxLength": 20,
             "title": "Company"
-          },
-          "requisitionNo": {
-            "type": "string",
-            "maxLength": 20,
-            "minLength": 1,
-            "title": "Requisitionno"
-          },
-          "lineNo": {
-            "type": "string",
-            "maxLength": 10,
-            "minLength": 1,
-            "title": "Lineno"
-          },
-          "releaseNo": {
-            "type": "string",
-            "maxLength": 10,
-            "minLength": 1,
-            "title": "Releaseno"
           },
           "sequenceNo": {
             "type": "integer",
@@ -3010,19 +3135,18 @@
             "default": {}
           }
         },
+        "additionalProperties": true,
         "type": "object",
         "required": [
           "version",
           "kind",
           "company",
-          "requisitionNo",
-          "lineNo",
-          "releaseNo",
           "sequenceNo",
           "issuedAt",
           "approvers"
         ],
-        "title": "HookMessage"
+        "title": "HookMessage",
+        "description": "The common part of every message. The record's keys are extra fields\nwhose names depend on the approval type (see `Flow.keys`)."
       },
       "IfsConnectionIn": {
         "properties": {
@@ -3861,17 +3985,17 @@
             "type": "integer",
             "title": "Id"
           },
-          "requisition_no": {
+          "kind": {
             "type": "string",
-            "title": "Requisition No"
+            "title": "Kind"
           },
-          "line_no": {
+          "kind_name": {
             "type": "string",
-            "title": "Line No"
+            "title": "Kind Name"
           },
-          "release_no": {
+          "reference": {
             "type": "string",
-            "title": "Release No"
+            "title": "Reference"
           },
           "sequence_no": {
             "type": "integer",
@@ -3966,9 +4090,9 @@
         "type": "object",
         "required": [
           "id",
-          "requisition_no",
-          "line_no",
-          "release_no",
+          "kind",
+          "kind_name",
+          "reference",
           "sequence_no",
           "item",
           "line_total",

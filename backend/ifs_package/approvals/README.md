@@ -1,8 +1,8 @@
 # AtroNexus approvals: IFS package
 
-Lets purchase requisition approvers approve or reject from an email, without signing in to IFS. IFS still records the real approver, with their own authority and limits.
+Lets IFS approvers approve or reject from an email, without signing in to IFS. IFS still records the real approver, with their own authority and limits.
 
-Built and read against IFS Cloud 25.1 core. Version 1 covers **purchase requisition lines**.
+Built and read against IFS Cloud 25.1 core. The package is organized by **approval type**; each organization picks the types it uses on the AtroNexus Approvals page, and the download contains the event actions for those types only. Built so far: **purchase requisition lines** (`PR_LINE`). Purchase orders, change orders, supplier invoices, expense sheets and document revisions are listed in AtroNexus as coming soon.
 
 ## What's in the package
 
@@ -10,10 +10,10 @@ Built and read against IFS Cloud 25.1 core. Version 1 covers **purchase requisit
 | --- | --- |
 | `workspace/purch/.../CAtxApprovalUtil-Cust.utility` / `.plsql` | Finds the approval step whose turn it is and its approvers, signs a token per approver, queues the message to AtroNexus, and approves or rejects as the real user |
 | `workspace/purch/.../CAtxApprovalHandling-Cust.projection` / `.plsvc` | The API AtroNexus calls: `GetPrLineStatus`, `GetRejectReasons`, `ApprovePrLine`, `RejectPrLine` |
-| `config/appconfig/` | Application configuration package with one event action on the standard event `PUR_REQ_LINE_TO_BE_AUTHORIZED` |
+| `flows/<type>/` | The event action(s) of each approval type (`flows/pr_line/`: the standard event `PUR_REQ_LINE_TO_BE_AUTHORIZED`). The AtroNexus download puts the chosen types into one application configuration package, `config/C_ATX_APPROVALS.zip` |
 | `config/connect/` | IFS Connect routing rule and routing address that POST the message to AtroNexus |
 
-Component `PURCH`, layer `Cust`. No new tables.
+Component `PURCH`, layer `Cust`. No new tables. The utility and projection are shared by every type: a type adds its own functions and actions to them, and its event action(s) under `flows/`. The code for every built type is always deployed; the event actions decide which types IFS sends.
 
 ## How it works
 
@@ -36,7 +36,7 @@ Problems in step 2 or 3 never block the requisition: they're written to the trac
 
 1. **Build and deploy the code** (`workspace/purch`) like any customization: put the four files in the customer's `purch` component (`Cust` layer), build, and deploy.
 2. **Set the secret.** *Application Base Setup → System Definitions → Object Properties*: add object `CAtxApproval`, key `*`, property `HMAC_SECRET`, with a random value of at least 32 characters. Keep it in IFS only; AtroNexus doesn't need it. Changing it invalidates links that haven't been used yet.
-3. **Import the event action.** Import `config/C_ATX_APPROVALS.zip` under *Solution Manager → Configuration → Application Configuration Packages*. (In the repository it's the folder `config/appconfig`; the download from AtroNexus has it zipped and ready.) Then make sure the event `PUR_REQ_LINE_TO_BE_AUTHORIZED` (LU `PurchReqLineApproval`) is **enabled** under *Solution Manager → Events*.
+3. **Import the event action.** Import `config/C_ATX_APPROVALS.zip` under *Solution Manager → Configuration → Application Configuration Packages*. (Only the download from AtroNexus has it: it's built from `flows/` for the types you switched on. Switch on a type later? Download again and import the new zip.) Then, for purchase requisition lines, make sure the event `PUR_REQ_LINE_TO_BE_AUTHORIZED` (LU `PurchReqLineApproval`) is **enabled** under *Solution Manager → Events*.
    - Or create the action by hand on that event: type *Execute Online SQL*, with
      ```sql
      BEGIN
@@ -48,6 +48,8 @@ Problems in step 2 or 3 never block the requisition: they're written to the trac
 6. **Test.** In AtroNexus, *Approvals → Setup → Check IFS*. Then release a test requisition line that needs authorization: the approver should get an email within a minute or two.
 
 ## Message to AtroNexus (version 1)
+
+`kind` is the approval type. The record's keys are fields named by the type (for `PR_LINE`: `requisitionNo`, `lineNo`, `releaseNo`); everything else is the same for every type.
 
 `POST https://atronexus.atrum0x.com/api/hooks/ifs/approvals` with `Authorization: Bearer <hook key>`:
 
@@ -74,5 +76,6 @@ Problems in step 2 or 3 never block the requisition: they're written to the trac
 ## Limits of version 1
 
 - Purchase requisition lines only. Purchase orders and change orders work the same way (standard events `PUR_ORD_LINE_TO_BE_AUTHORIZED`, `POCO_TO_BE_AUTHORIZED`) and come next.
+- AtroNexus refuses (409) a message for a type that's switched off there, so IFS keeps it in Application Messages.
 - Steps assigned to a **position** or **project role** aren't emailed; those people authorize in IFS as usual.
 - People without an email address on their IFS user aren't emailed.

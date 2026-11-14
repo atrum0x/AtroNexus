@@ -45,7 +45,7 @@ TOOLS: tuple[Tool, ...] = (
     Tool(
         APPROVALS,
         "Approve from email",
-        "Approvers get an email and approve or reject purchase requisition lines without signing in to IFS. IFS still records the real approver. Needs the AtroNexus IFS package.",
+        "Approvers get an email and approve or reject without signing in to IFS. You pick which approvals (purchase requisitions today, more coming). IFS still records the real approver. Needs the AtroNexus IFS package.",
         Decimal("39"),
         available=True,
     ),

@@ -6,7 +6,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, 
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from app.approvals import ifs_api, package, service
+from app.approvals import flows, ifs_api, package, service
 from app.approvals.models import SENT, ApprovalRequest, ApprovalSetup
 from app.config import get_settings
 from app.deps import DbSession, ManagerOnly, OrgId, VerifiedEmail, get_current_user
@@ -46,11 +46,26 @@ class HookKeyOut(BaseModel):
     hook_key: str
 
 
+class FlowOut(BaseModel):
+    """One approval type, and whether this organization uses it."""
+
+    code: str
+    name: str
+    description: str
+    available: bool  # False: a placeholder, coming soon
+    enabled: bool
+    ifs_events: list[str]
+
+
+class FlowIn(BaseModel):
+    enabled: bool
+
+
 class RequestOut(BaseModel):
     id: int
-    requisition_no: str
-    line_no: str
-    release_no: str
+    kind: str
+    kind_name: str
+    reference: str  # e.g. "R1001 line 1"
     sequence_no: int
     item: str | None
     line_total: str | None
@@ -73,9 +88,8 @@ class ApprovalView(BaseModel):
     live: bool  # False: IFS couldn't be reached, summary is what IFS sent
     organization: str
     approver_name: str
-    requisition_no: str
-    line_no: str
-    release_no: str
+    kind: str
+    title: str  # e.g. "Purchase requisition R1001 line 1"
     summary: dict[str, Any]
     message: str | None = None
 
@@ -124,6 +138,31 @@ def _setup_out(setup: ApprovalSetup) -> SetupOut:
     )
 
 
+def _flows_out(db: DbSession, org_id: int) -> list[FlowOut]:
+    on = service.enabled_flows(db, org_id)
+    return [
+        FlowOut(
+            code=f.code,
+            name=f.name,
+            description=f.description,
+            available=f.available,
+            enabled=f.code in on,
+            ifs_events=list(f.ifs_events),
+        )
+        for f in flows.FLOWS
+    ]
+
+
+def _kind_name(kind: str) -> str:
+    flow = flows.get(kind)
+    return flow.name if flow else kind
+
+
+def _reference(r: ApprovalRequest) -> str:
+    flow = flows.get(r.kind)
+    return flow.describe(r.keys) if flow else " · ".join(r.keys)
+
+
 # --- Admin ---
 
 router = APIRouter(
@@ -155,6 +194,24 @@ def update_approval_setup(body: SetupIn, db: DbSession, org_id: OrgId) -> SetupO
     db.commit()
     db.refresh(setup)
     return _setup_out(setup)
+
+
+@router.get("/flows", response_model=list[FlowOut])
+def list_approval_flows(db: DbSession, org_id: OrgId) -> list[FlowOut]:
+    """Every approval type, with the ones this organization uses switched on."""
+    return _flows_out(db, org_id)
+
+
+@router.put("/flows/{code}", response_model=list[FlowOut], dependencies=[ManagerOnly])
+def update_approval_flow(code: str, body: FlowIn, db: DbSession, org_id: OrgId) -> list[FlowOut]:
+    flow = flows.get(code)
+    if flow is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Unknown approval type.")
+    if body.enabled and not flow.available:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"{flow.name} aren't available yet.")
+    service.set_flow(db, org_id, code, body.enabled)
+    db.commit()
+    return _flows_out(db, org_id)
 
 
 @router.post("/setup/hook-key", response_model=HookKeyOut, dependencies=[ManagerOnly])
@@ -192,10 +249,13 @@ def check_approval_package(db: DbSession, org_id: OrgId) -> CheckResult:
     response_class=Response,
     responses={200: {"content": {"application/zip": {}}, "description": "The IFS package as a zip"}},
 )
-def download_approval_package() -> Response:
-    """The IFS package, with the routing address pointing at this AtroNexus."""
+def download_approval_package(db: DbSession, org_id: OrgId) -> Response:
+    """The IFS package for the approval types switched on, with the routing address pointing at this AtroNexus."""
+    chosen = [f for f in flows.FLOWS if f.code in service.enabled_flows(db, org_id)]
+    if not chosen:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Switch on at least one approval type first.")
     return Response(
-        content=package.build_zip(_hook_url()),
+        content=package.build_zip(_hook_url(), chosen),
         media_type="application/zip",
         headers={"Content-Disposition": 'attachment; filename="atronexus-approvals-ifs-package.zip"'},
     )
@@ -220,9 +280,9 @@ def list_approval_requests(
         out.append(
             RequestOut(
                 id=r.id,
-                requisition_no=r.requisition_no,
-                line_no=r.line_no,
-                release_no=r.release_no,
+                kind=r.kind,
+                kind_name=_kind_name(r.kind),
+                reference=_reference(r),
                 sequence_no=r.sequence_no,
                 item=summary.get("description") or summary.get("partNo"),
                 line_total=total,
@@ -262,10 +322,17 @@ def receive_approval_request(
         raise HTTPException(status.HTTP_409_CONFLICT, "Approvals are switched off for this organization in AtroNexus.")
     if not setup.enabled or setup.connection is None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Approvals aren't switched on in AtroNexus yet.")
-    if message.version != 1 or message.kind != "PR_LINE":
+    flow = flows.get(message.kind)
+    if message.version != 1 or flow is None or not flow.available:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Unsupported message version or kind.")
+    if flow.code not in service.enabled_flows(db, setup.organization_id):
+        raise HTTPException(status.HTTP_409_CONFLICT, f"{flow.name} are switched off in AtroNexus.")
+    try:
+        key = service.object_key(flow, message)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from None
 
-    sent = service.receive(db, setup, message)
+    sent = service.receive(db, setup, message, key)
     db.commit()
     for request, token in sent:
         background.add_task(send_email, service.approval_email(request, token, setup.link_days))
@@ -300,6 +367,7 @@ def _resolve(db: DbSession, token: str) -> tuple[ApprovalRequest, ApprovalSetup,
         or not setup.enabled
         or setup.connection is None
         or not is_enabled(db, request.organization_id, APPROVALS)
+        or request.kind not in service.enabled_flows(db, request.organization_id)
     ):
         raise HTTPException(status.HTTP_404_NOT_FOUND, NOT_VALID)
     return request, setup, link, org
@@ -316,9 +384,8 @@ def get_approval(token: LinkToken, request: Request, db: DbSession) -> ApprovalV
         live=False,
         organization=org.name,
         approver_name=approval.approver_name,
-        requisition_no=approval.requisition_no,
-        line_no=approval.line_no,
-        release_no=approval.release_no,
+        kind=approval.kind,
+        title=service.title(approval),
         summary=json.loads(approval.summary_json or "{}"),
     )
     if view.link_state != "open" or approval.status != SENT:
@@ -326,7 +393,7 @@ def get_approval(token: LinkToken, request: Request, db: DbSession) -> ApprovalV
 
     links.mark_opened(link)
     try:
-        live = ifs_api.line_status(setup.connection, approval)
+        live = ifs_api.step_status(setup.connection, approval)
         view.ifs_status = live.status
         view.summary = live.summary or view.summary
         view.live = True
@@ -372,5 +439,5 @@ def decide_approval(token: LinkToken, body: DecisionIn, request: Request, db: Db
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"IFS didn't accept it: {exc.message}") from None
     db.commit()
     if result == "REJECTED" and body.decision == "approve":
-        return DecisionOut(result=result, message="This line was already rejected. Nothing was changed.")
+        return DecisionOut(result=result, message="This was already rejected. Nothing was changed.")
     return DecisionOut(result=result, message=DECISION_MESSAGES.get(result, result))

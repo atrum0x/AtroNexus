@@ -28,6 +28,8 @@ export * from './decisionIn';
 export * from './decisionInDecision';
 export * from './decisionOut';
 export * from './errorRow';
+export * from './flowIn';
+export * from './flowOut';
 export * from './forgotPasswordRequest';
 export * from './health200';
 export * from './hookApprover';

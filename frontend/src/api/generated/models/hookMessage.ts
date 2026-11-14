@@ -7,29 +7,20 @@
 import type { HookApprover } from './hookApprover';
 import type { HookMessageSummary } from './hookMessageSummary';
 
+/**
+ * The common part of every message. The record's keys are extra fields
+ * whose names depend on the approval type (see `Flow.keys`).
+ */
 export interface HookMessage {
   version: number;
+  /** @maxLength 30 */
   kind: string;
   /** @maxLength 20 */
   company: string;
-  /**
-     * @minLength 1
-     * @maxLength 20
-     */
-  requisitionNo: string;
-  /**
-     * @minLength 1
-     * @maxLength 10
-     */
-  lineNo: string;
-  /**
-     * @minLength 1
-     * @maxLength 10
-     */
-  releaseNo: string;
   sequenceNo: number;
   issuedAt: number;
   /** @maxItems 200 */
   approvers: HookApprover[];
   summary?: HookMessageSummary;
-}
+  [key: string]: unknown;
+ }

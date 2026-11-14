@@ -51,18 +51,18 @@ class ApprovalRequest(Base):
     __tablename__ = "approval_requests"
     __table_args__ = (
         UniqueConstraint(
-            "organization_id", "kind", "requisition_no", "line_no", "release_no", "sequence_no", "fnd_user",
+            "organization_id", "kind", "object_key", "sequence_no", "fnd_user",
             name="uq_approval_requests_step_person",
         ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), index=True)
-    kind: Mapped[str] = mapped_column(String(20))  # "PR_LINE"
+    kind: Mapped[str] = mapped_column(String(30))  # an approval type, see flows.py
     company: Mapped[str] = mapped_column(String(20))
-    requisition_no: Mapped[str] = mapped_column(String(20))
-    line_no: Mapped[str] = mapped_column(String(10))
-    release_no: Mapped[str] = mapped_column(String(10))
+    # The IFS record's keys in IFS order, joined with "^" like IFS key refs
+    # (for PR_LINE: requisition no, line no, release no).
+    object_key: Mapped[str] = mapped_column(String(200))
     sequence_no: Mapped[int] = mapped_column(Integer)
 
     fnd_user: Mapped[str] = mapped_column(String(30))
@@ -84,3 +84,23 @@ class ApprovalRequest(Base):
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=_now, onupdate=_now)
 
     link: Mapped[SecureLink | None] = relationship(lazy="joined")
+
+    @property
+    def keys(self) -> list[str]:
+        return self.object_key.split(KEY_SEPARATOR)
+
+
+KEY_SEPARATOR = "^"
+
+
+class ApprovalFlowSetting(Base):
+    """Whether an organization uses one approval type. No row means off."""
+
+    __tablename__ = "approval_flow_settings"
+    __table_args__ = (UniqueConstraint("organization_id", "flow", name="uq_approval_flow_settings_org_flow"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), index=True)
+    flow: Mapped[str] = mapped_column(String(30))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    updated_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=_now, onupdate=_now)
