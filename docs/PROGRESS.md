@@ -37,6 +37,7 @@ Only the Vercel frontend can call the backend: every request must carry the shar
 | 18 | Custom domain atrum0x.com, real email through Resend | settings only |
 | 19 | Capture links: rate limits and a New link button | PR #11 |
 | 20 | Tool 3: approvals from email (purchase requisition lines) + IFS package | PR #12 |
+| 21 | IFS package download on the Approvals page; approval types (pick which approvals; PR lines built, five more as coming soon) | PR #13 |
 
 ## 1. Foundations
 
@@ -177,11 +178,16 @@ The plan: customers sign up themselves, each company has its own space and dashb
 - Security checkpoint `PURCH_REQ_AUTHORIZATION` is off on your environment (and by default).
 
 **What was built:**
-- **IFS package** `ifs/approvals/` (code delivery, no tables): utility + projection `CAtxApprovalHandling`, an event action, routing rule and address, and a README with installation steps and the JSON contract. Tokens are HMAC-SHA256 with a secret only IFS knows, so AtroNexus can only act on approvals IFS asked for, as the person IFS named, within their limits.
+- **IFS package** `backend/ifs_package/approvals/` (code delivery, no tables): utility + projection `CAtxApprovalHandling`, an event action, routing rule and address, and a README with installation steps and the JSON contract. Tokens are HMAC-SHA256 with a secret only IFS knows, so AtroNexus can only act on approvals IFS asked for, as the person IFS named, within their limits.
 - **Secure links** (building block): hashed one-time tokens, expiry, revoke, open/used tracking.
 - **AtroNexus**: the hook (through the frontend, Bearer key), approval emails, the public approval page `/a/<token>` (live line from IFS, Approve with a confirm, Reject with IFS reject reasons and a note), the admin page `/approvals` (setup, hook key shown once, IFS package check, request log), usage counting, and the "Approve from email" tool switched on as available.
 
 **Still to do before real use:** build and deploy the IFS package on a test environment (the PL/SQL hasn't been compiled yet), grant the service user `IMPERSONATE USER`, and run one real requisition line end to end. Then purchase orders and change orders (same pattern), reminders, and a code for high-value approvals.
+
+### Package download and approval types (PR #13)
+
+- The Approvals page has a **Download IFS package** button. The zip has the source to build, `config/C_ATX_APPROVALS.zip` ready to import, the README, and the routing rule and address with the address already pointing at that AtroNexus (only the hook key is pasted in). The package moved to `backend/ifs_package/approvals/` because the Docker image only has `backend/`.
+- **Approval types**: step 1 on the page is now *Choose approval types*. Purchase requisition lines can be switched on; purchase orders, PO change orders, supplier invoices, expense sheets and document revisions are listed as coming soon. The download only contains the event actions of the types switched on, IFS messages for a type that's off are refused (409), and links of a type that's switched off stop working. Requests are stored with a generic `object_key` instead of requisition columns (migration `0009`; existing setups keep PR lines on), so a new type only needs its IFS code and a catalog entry in `app/approvals/flows.py`.
 
 ## Environment variables
 

@@ -23,6 +23,8 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY app ./app
 COPY alembic.ini ./
 COPY migrations ./migrations
+# The IFS package customers download from the Approvals page.
+COPY ifs_package ./ifs_package
 
 RUN useradd --system --no-create-home app && mkdir /data && chown app /data
 USER app

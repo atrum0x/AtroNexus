@@ -7,9 +7,9 @@
 
 export interface RequestOut {
   id: number;
-  requisition_no: string;
-  line_no: string;
-  release_no: string;
+  kind: string;
+  kind_name: string;
+  reference: string;
   sequence_no: number;
   item: string | null;
   line_total: string | null;

@@ -97,7 +97,12 @@ def setup(client, auth_headers, fake_ifs) -> dict:
     res = client.put("/api/approvals/setup", json={"connection_id": conn["id"], "enabled": True, "link_days": 7},
                      headers=auth_headers)
     assert res.status_code == 200, res.text
+    assert switch_flow(client, auth_headers, "PR_LINE", True).status_code == 200
     return {"key": key, "connection": conn}
+
+
+def switch_flow(client, headers, code: str, enabled: bool):
+    return client.put(f"/api/approvals/flows/{code}", json={"enabled": enabled}, headers=headers)
 
 
 def send(client, key, body=None):
@@ -126,11 +131,12 @@ def test_hook_creates_a_request_and_emails_each_approver(client, setup):
     assert res.status_code == 200 and res.json() == {"received": 2}
     assert sorted(e.to for e in outbox) == ["john@example.com", "mary@example.com"]
     email = next(e for e in outbox if e.to == "john@example.com")
-    assert "R1001 line 1" in email.subject
+    assert email.subject == "Approval needed: purchase requisition R1001 line 1"
     assert "Laptop" in email.text and "500,000.00 LKR" in email.text
     with SessionLocal() as db:
         rows = db.scalars(select(ApprovalRequest)).all()
         assert {r.fnd_user for r in rows} == {"JOHN", "MARY"}
+        assert {r.object_key for r in rows} == {"R1001^1^1"}
         assert all(TOKEN_A not in r.ifs_token_enc and TOKEN_B not in r.ifs_token_enc for r in rows)
 
 
@@ -146,10 +152,27 @@ def test_hook_refuses_when_switched_off(client, setup, auth_headers):
 
 def test_hook_rejects_unknown_message_kinds(client, setup):
     assert send(client, setup["key"], message(kind="PO_LINE")).status_code == 422
+    assert send(client, setup["key"], message(kind="PURCHASE_ORDER")).status_code == 422  # not built yet
     assert send(client, setup["key"], message(version=2)).status_code == 422
     bad = message()
     bad["approvers"][0]["token"] = "not-hex"
     assert send(client, setup["key"], bad).status_code == 422
+
+
+def test_hook_needs_the_records_keys(client, setup):
+    missing = message()
+    del missing["lineNo"]
+    res = send(client, setup["key"], missing)
+    assert res.status_code == 422 and "lineNo" in res.json()["detail"]
+    assert send(client, setup["key"], message(requisitionNo="R^1")).status_code == 422
+    assert send(client, setup["key"], message(lineNo=3)).status_code == 200  # numbers are fine
+
+
+def test_hook_refuses_a_type_thats_switched_off(client, setup, auth_headers):
+    switch_flow(client, auth_headers, "PR_LINE", False)
+    res = send(client, setup["key"])
+    assert res.status_code == 409 and "Purchase requisition lines" in res.json()["detail"]
+    assert outbox == []
 
 
 def test_a_new_key_stops_the_old_one(client, setup, auth_headers):
@@ -178,6 +201,7 @@ def test_page_shows_the_live_line_and_marks_the_link_opened(client, setup, fake_
     assert (view["link_state"], view["ifs_status"], view["live"]) == ("open", "PENDING", True)
     assert view["summary"]["description"] == "Laptop (live)"
     assert view["approver_name"] == "John Perera"
+    assert (view["kind"], view["title"]) == ("PR_LINE", "Purchase requisition R1001 line 1")
     action, body = fake_ifs.calls[-1]
     assert action == "GetPrLineStatus"
     assert (body["RequisitionNo"], body["SequenceNo"], body["FndUser"], body["Token"]) == ("R1001", 2, "JOHN", TOKEN_A)
@@ -275,6 +299,51 @@ def test_links_stop_when_the_tool_is_switched_off(client, setup, auth_headers):
     assert client.get(f"/api/public/approvals/{token}").status_code == 404
 
 
+def test_links_stop_when_their_type_is_switched_off(client, setup, auth_headers):
+    send(client, setup["key"])
+    token = link_for("john@example.com")
+    switch_flow(client, auth_headers, "PR_LINE", False)
+    assert client.get(f"/api/public/approvals/{token}").status_code == 404
+    switch_flow(client, auth_headers, "PR_LINE", True)
+    assert client.get(f"/api/public/approvals/{token}").status_code == 200
+
+
+# --- Approval types ---
+
+
+def test_types_list_shows_built_ones_and_placeholders(client, auth_headers):
+    flows = {f["code"]: f for f in client.get("/api/approvals/flows", headers=auth_headers).json()}
+    assert flows["PR_LINE"]["available"] is True and flows["PR_LINE"]["enabled"] is False
+    assert flows["PR_LINE"]["ifs_events"] == ["PUR_REQ_LINE_TO_BE_AUTHORIZED"]
+    assert flows["PURCHASE_ORDER"]["available"] is False
+    assert len(flows) > 1
+
+    res = switch_flow(client, auth_headers, "PR_LINE", True)
+    assert res.status_code == 200
+    assert next(f for f in res.json() if f["code"] == "PR_LINE")["enabled"] is True
+
+
+def test_placeholders_and_unknown_types_cant_be_switched_on(client, auth_headers):
+    assert switch_flow(client, auth_headers, "PURCHASE_ORDER", True).status_code == 422
+    assert switch_flow(client, auth_headers, "PURCHASE_ORDER", False).status_code == 200
+    assert switch_flow(client, auth_headers, "NOPE", True).status_code == 404
+
+
+def test_types_are_per_organization(client, auth_headers, other_org_headers):
+    client.put("/api/tools/approvals", json={"enabled": True}, headers=other_org_headers)
+    switch_flow(client, auth_headers, "PR_LINE", True)
+    other = client.get("/api/approvals/flows", headers=other_org_headers).json()
+    assert not any(f["enabled"] for f in other)
+
+
+def test_members_cant_switch_types(client, other_org_headers):
+    client.put("/api/tools/approvals", json={"enabled": True}, headers=other_org_headers)
+    add_user("mt", "Other Co", role="member")
+    member = login_headers(client, "mt", "pass1234")
+    assert client.get("/api/approvals/flows", headers=member).status_code == 200
+    assert switch_flow(client, member, "PR_LINE", True).status_code == 403
+
+
 # --- Admin ---
 
 
@@ -319,6 +388,8 @@ def test_request_log(client, setup, auth_headers):
     assert by_user["Mary Silva"]["status"] == "closed"
     assert by_user["John Perera"]["item"] == "Laptop"
     assert by_user["John Perera"]["line_total"] == "500,000.00 LKR"
+    assert (by_user["John Perera"]["kind_name"], by_user["John Perera"]["reference"]) == (
+        "Purchase requisition lines", "R1001 line 1")
 
 
 def test_other_organizations_cant_see_the_log(client, setup, other_org_headers):
@@ -329,3 +400,46 @@ def test_other_organizations_cant_see_the_log(client, setup, other_org_headers):
 
 def test_tool_off_closes_the_admin_api(client, other_org_headers):
     assert client.get("/api/approvals/setup", headers=other_org_headers).status_code == 403
+
+
+def test_package_download_is_ready_to_import(client, auth_headers):
+    import io
+    import zipfile
+
+    res = client.get("/api/approvals/package", headers=auth_headers)
+    assert res.status_code == 409  # no approval type switched on yet
+    switch_flow(client, auth_headers, "PR_LINE", True)
+    res = client.get("/api/approvals/package", headers=auth_headers)
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "application/zip"
+    assert "atronexus-approvals-ifs-package.zip" in res.headers["content-disposition"]
+    files = zipfile.ZipFile(io.BytesIO(res.content))
+    names = set(files.namelist())
+    root = "atronexus-approvals/"
+    for expected in (
+        "README.md",
+        "workspace/purch/source/purch/database/CAtxApprovalUtil-Cust.plsql",
+        "workspace/purch/model/purch/CAtxApprovalHandling-Cust.projection",
+        "config/connect/RoutingRule_C_ATX_APPROVAL_RULE.xml",
+        "config/C_ATX_APPROVALS.zip",
+    ):
+        assert root + expected in names
+    assert not any("/flows/" in n for n in names)
+
+    # The configuration package is a valid zip with the package XML at its root.
+    acp = zipfile.ZipFile(io.BytesIO(files.read(root + "config/C_ATX_APPROVALS.zip")))
+    assert "C_ATX_APPROVALS.xml" in acp.namelist()
+    items = [n for n in acp.namelist() if n.startswith("Items/")]
+    assert items == ["Items/CustomEventAction-PurchReqLineApproval-PUR_REQ_LINE_TO_BE_AUTHORIZED-901-EXECUTEONLINESQL.xml"]
+    package_xml = acp.read("C_ATX_APPROVALS.xml").decode()
+    assert "<NAME>901^PUR_REQ_LINE_TO_BE_AUTHORIZED^PurchReqLineApproval</NAME>" in package_xml
+    assert "<FILENAME>" + items[0].removeprefix("Items/") + "</FILENAME>" in package_xml
+
+    # The routing address points at this AtroNexus; the hook key isn't in it.
+    address = files.read(root + "config/connect/RoutingAddress_C_ATX_APPROVAL_ADDR.xml").decode()
+    assert "<REST_ROOT_END_POINT>http://localhost:3000/api/hooks/ifs/approvals</REST_ROOT_END_POINT>" in address
+    assert "PASTE_YOUR_ATRONEXUS_HOOK_KEY_HERE" in address
+
+
+def test_package_download_needs_the_tool(client, other_org_headers):
+    assert client.get("/api/approvals/package", headers=other_org_headers).status_code == 403

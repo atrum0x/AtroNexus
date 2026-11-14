@@ -1,9 +1,15 @@
-"""Calls to the IFS package's projection CAtxApprovalHandling."""
+"""Calls to the IFS package's projection CAtxApprovalHandling.
+
+Which action and which key parameters to use come from the request's approval
+type (`flows.py`).
+"""
 
 import json
 from dataclasses import dataclass
 from typing import Any
 
+from app.approvals import flows
+from app.approvals.flows import Flow, IfsActions
 from app.approvals.models import ApprovalRequest
 from app.crypto import decrypt
 from app.ifs.client import IfsClient
@@ -13,17 +19,24 @@ SERVICE = "/main/ifsapplications/projection/v1/CAtxApprovalHandling.svc"
 
 
 @dataclass
-class LineStatus:
+class StepStatus:
     status: str  # PENDING, SIGNED, NOT_YET, REJECTED
     signed_by: str | None
     summary: dict[str, Any]
 
 
+def _flow(request: ApprovalRequest) -> tuple[Flow, IfsActions]:
+    flow = flows.get(request.kind)
+    if flow is None or flow.actions is None:
+        raise ValueError(f"Approval type {request.kind} isn't supported.")
+    return flow, flow.actions
+
+
 def _params(request: ApprovalRequest) -> dict[str, Any]:
+    flow, _ = _flow(request)
+    keys = dict(zip((param for _, param in flow.keys), request.keys, strict=True))
     return {
-        "RequisitionNo": request.requisition_no,
-        "LineNo": request.line_no,
-        "ReleaseNo": request.release_no,
+        **keys,
         "SequenceNo": request.sequence_no,
         "FndUser": request.fnd_user,
         "IssuedAt": request.issued_at,
@@ -41,9 +54,9 @@ def check_package(connection: IfsConnection) -> None:
     IfsClient(connection).request("GET", f"{SERVICE}/")
 
 
-def line_status(connection: IfsConnection, request: ApprovalRequest) -> LineStatus:
-    data = json.loads(_call(connection, "GetPrLineStatus", _params(request)) or "{}")
-    return LineStatus(
+def step_status(connection: IfsConnection, request: ApprovalRequest) -> StepStatus:
+    data = json.loads(_call(connection, _flow(request)[1].status, _params(request)) or "{}")
+    return StepStatus(
         status=str(data.get("status") or "PENDING"),
         signed_by=data.get("signedBy"),
         summary=data.get("summary") or {},
@@ -51,17 +64,17 @@ def line_status(connection: IfsConnection, request: ApprovalRequest) -> LineStat
 
 
 def reject_reasons(connection: IfsConnection, request: ApprovalRequest) -> list[dict[str, str]]:
-    data = json.loads(_call(connection, "GetRejectReasons", _params(request)) or "[]")
+    data = json.loads(_call(connection, _flow(request)[1].reject_reasons, _params(request)) or "[]")
     return [{"id": str(r.get("id")), "description": str(r.get("description") or r.get("id"))} for r in data]
 
 
 def approve(connection: IfsConnection, request: ApprovalRequest) -> str:
     """APPROVED, or SIGNED / NOT_YET / REJECTED when the step can't be approved now."""
-    return str(_call(connection, "ApprovePrLine", _params(request)))
+    return str(_call(connection, _flow(request)[1].approve, _params(request)))
 
 
 def reject(connection: IfsConnection, request: ApprovalRequest, reason_id: str, note: str | None) -> str:
     """REJECTED, or SIGNED / NOT_YET when the step can't be rejected now."""
     return str(
-        _call(connection, "RejectPrLine", {**_params(request), "RejectReasonId": reason_id, "RejectNote": note or ""})
+        _call(connection, _flow(request)[1].reject, {**_params(request), "RejectReasonId": reason_id, "RejectNote": note or ""})
     )

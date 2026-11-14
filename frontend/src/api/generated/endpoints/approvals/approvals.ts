@@ -6,6 +6,8 @@
  */
 import type {
   CheckResult,
+  FlowIn,
+  FlowOut,
   HookKeyOut,
   ListApprovalRequestsParams,
   RequestOut,
@@ -75,6 +77,68 @@ return apiFetch<SetupOut>(getUpdateApprovalSetupUrl(),
 );}
 
 
+export const getListApprovalFlowsUrl = () => {
+
+
+
+
+  return `/api/approvals/flows`
+}
+
+/**
+ * Every approval type, with the ones this organization uses switched on.
+ * @summary List Approval Flows
+ */
+export const listApprovalFlows = async ( options?: Parameters<typeof apiFetch>[1]): Promise<FlowOut[]> => {
+
+  return apiFetch<FlowOut[]>(getListApprovalFlowsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+export const getUpdateApprovalFlowUrl = (code: string,) => {
+
+
+
+
+  return `/api/approvals/flows/${code}`
+}
+
+/**
+ * @summary Update Approval Flow
+ */
+export const updateApprovalFlow = async (code: string,
+    flowIn: FlowIn, options?: Parameters<typeof apiFetch>[1]): Promise<FlowOut[]> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<FlowOut[]>(getUpdateApprovalFlowUrl(code),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(flowIn)
+  }
+);}
+
+
 export const getCreateHookKeyUrl = () => {
 
 
@@ -117,6 +181,30 @@ export const checkApprovalPackage = async ( options?: Parameters<typeof apiFetch
   {
     ...options,
     method: 'POST'
+
+
+  }
+);}
+
+
+export const getDownloadApprovalPackageUrl = () => {
+
+
+
+
+  return `/api/approvals/package`
+}
+
+/**
+ * The IFS package for the approval types switched on, with the routing address pointing at this AtroNexus.
+ * @summary Download Approval Package
+ */
+export const downloadApprovalPackage = async ( options?: Parameters<typeof apiFetch>[1]): Promise<Blob> => {
+
+  return apiFetch<Blob>(getDownloadApprovalPackageUrl(),
+  {
+    ...options,
+    method: 'GET'
 
 
   }

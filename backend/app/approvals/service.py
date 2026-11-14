@@ -5,16 +5,19 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from app.approvals import ifs_api
+from app.approvals import flows, ifs_api
+from app.approvals.flows import Flow
 from app.approvals.models import (
     APPROVED,
     CLOSED,
+    KEY_SEPARATOR,
     REJECTED,
     SENT,
+    ApprovalFlowSetting,
     ApprovalRequest,
     ApprovalSetup,
 )
@@ -34,7 +37,7 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-# --- The message from IFS (contract version 1, see ifs/approvals/README.md) ---
+# --- The message from IFS (contract version 1, see backend/ifs_package/approvals/README.md) ---
 
 
 class HookApprover(BaseModel):
@@ -46,16 +49,58 @@ class HookApprover(BaseModel):
 
 
 class HookMessage(BaseModel):
+    """The common part of every message. The record's keys are extra fields
+    whose names depend on the approval type (see `Flow.keys`)."""
+
+    model_config = ConfigDict(extra="allow")
+
     version: int
-    kind: str
+    kind: str = Field(max_length=30)
     company: str = Field(max_length=20)
-    requisitionNo: str = Field(min_length=1, max_length=20)
-    lineNo: str = Field(min_length=1, max_length=10)
-    releaseNo: str = Field(min_length=1, max_length=10)
     sequenceNo: int
     issuedAt: int
     approvers: list[HookApprover] = Field(max_length=200)
     summary: dict[str, Any] = {}
+
+
+def object_key(flow: Flow, message: HookMessage) -> str:
+    """The record's keys from the message, joined; raises ValueError when one is missing or odd."""
+    extra = message.model_extra or {}
+    values = []
+    for name, _ in flow.keys:
+        value = extra.get(name)
+        if isinstance(value, bool) or not isinstance(value, (str, int)):
+            raise ValueError(f"{name} is missing.")
+        value = str(value).strip()
+        if not value or len(value) > 50 or KEY_SEPARATOR in value:
+            raise ValueError(f"{name} isn't a valid key.")
+        values.append(value)
+    return KEY_SEPARATOR.join(values)
+
+
+# --- Which approval types an organization uses ---
+
+
+def enabled_flows(db: Session, org_id: int) -> set[str]:
+    """Codes of the switched-on types that are built (a placeholder never counts)."""
+    rows = db.scalars(
+        select(ApprovalFlowSetting.flow).where(
+            ApprovalFlowSetting.organization_id == org_id, ApprovalFlowSetting.enabled.is_(True)
+        )
+    ).all()
+    return {code for code in rows if (f := flows.get(code)) is not None and f.available}
+
+
+def set_flow(db: Session, org_id: int, code: str, enabled: bool) -> None:
+    row = db.scalar(
+        select(ApprovalFlowSetting).where(
+            ApprovalFlowSetting.organization_id == org_id, ApprovalFlowSetting.flow == code
+        )
+    )
+    if row is None:
+        row = ApprovalFlowSetting(organization_id=org_id, flow=code)
+        db.add(row)
+    row.enabled = enabled
 
 
 # --- Hook keys ---
@@ -76,7 +121,9 @@ def setup_for_hook_key(db: Session, key: str) -> ApprovalSetup | None:
 # --- Taking a request from IFS ---
 
 
-def receive(db: Session, setup: ApprovalSetup, message: HookMessage) -> list[tuple[ApprovalRequest, str]]:
+def receive(
+    db: Session, setup: ApprovalSetup, message: HookMessage, key: str
+) -> list[tuple[ApprovalRequest, str]]:
     """Creates or refreshes one request per approver and gives each a new link.
 
     Returns (request, link token) for every approver who should get an email.
@@ -90,9 +137,7 @@ def receive(db: Session, setup: ApprovalSetup, message: HookMessage) -> list[tup
             select(ApprovalRequest).where(
                 ApprovalRequest.organization_id == setup.organization_id,
                 ApprovalRequest.kind == message.kind,
-                ApprovalRequest.requisition_no == message.requisitionNo,
-                ApprovalRequest.line_no == message.lineNo,
-                ApprovalRequest.release_no == message.releaseNo,
+                ApprovalRequest.object_key == key,
                 ApprovalRequest.sequence_no == message.sequenceNo,
                 ApprovalRequest.fnd_user == approver.fndUser.upper(),
             )
@@ -103,9 +148,7 @@ def receive(db: Session, setup: ApprovalSetup, message: HookMessage) -> list[tup
             request = ApprovalRequest(
                 organization_id=setup.organization_id,
                 kind=message.kind,
-                requisition_no=message.requisitionNo,
-                line_no=message.lineNo,
-                release_no=message.releaseNo,
+                object_key=key,
                 sequence_no=message.sequenceNo,
                 fnd_user=approver.fndUser.upper(),
             )
@@ -159,15 +202,21 @@ def summary_lines(summary: dict[str, Any]) -> list[str]:
     return lines
 
 
+def title(request: ApprovalRequest) -> str:
+    """e.g. "Purchase requisition R1001 line 1"."""
+    flow = flows.get(request.kind)
+    return flow.title(request.keys) if flow else f"{request.kind} {' · '.join(request.keys)}"
+
+
 def approval_email(request: ApprovalRequest, token: str, link_days: int) -> Email:
     summary = json.loads(request.summary_json or "{}")
-    ref = f"{request.requisition_no} line {request.line_no}"
+    what = title(request)
     link = f"{get_settings().app_url.rstrip('/')}/a/{token}"
     body = "\n".join(
         [
             f"Hi {request.approver_name},",
             "",
-            f"Purchase requisition {ref} is waiting for your authorization.",
+            f"{what} is waiting for your authorization.",
             "",
             *summary_lines(summary),
             "",
@@ -180,7 +229,7 @@ def approval_email(request: ApprovalRequest, token: str, link_days: int) -> Emai
     )
     return Email(
         to=request.approver_email,
-        subject=f"Approval needed: purchase requisition {ref}",
+        subject=f"Approval needed: {what[:1].lower()}{what[1:]}",
         text=body,
     )
 
@@ -204,9 +253,7 @@ def close_others(db: Session, request: ApprovalRequest) -> None:
         select(ApprovalRequest).where(
             ApprovalRequest.organization_id == request.organization_id,
             ApprovalRequest.kind == request.kind,
-            ApprovalRequest.requisition_no == request.requisition_no,
-            ApprovalRequest.line_no == request.line_no,
-            ApprovalRequest.release_no == request.release_no,
+            ApprovalRequest.object_key == request.object_key,
             ApprovalRequest.sequence_no == request.sequence_no,
             ApprovalRequest.id != request.id,
             ApprovalRequest.status == SENT,
