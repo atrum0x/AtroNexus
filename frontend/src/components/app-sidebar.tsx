@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   MapPin,
+  MessageCircle,
   Monitor,
   Moon,
   PlugZap,
@@ -66,6 +67,9 @@ function sections(data: SidebarData): { label?: string; items: NavItem[] }[] {
   }
   if (data.enabledTools.includes("approvals")) {
     tools.push({ href: "/approvals", label: "Approvals", icon: ClipboardCheck });
+  }
+  if (data.enabledTools.includes("messaging")) {
+    tools.push({ href: "/messaging", label: "Messaging", icon: MessageCircle });
   }
   tools.push({ href: "/tools", label: "All tools", icon: Blocks });
 

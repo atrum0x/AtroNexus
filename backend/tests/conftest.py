@@ -43,8 +43,9 @@ def fake_dns(monkeypatch):
 def reset_rate_limits():
     from app.approvals.router import LIMITERS as APPROVAL_LIMITERS
     from app.capture.router import LIMITERS
+    from app.messaging.router import hook_limiter as messaging_limiter
 
-    for limiter in (*LIMITERS, *APPROVAL_LIMITERS):
+    for limiter in (*LIMITERS, *APPROVAL_LIMITERS, messaging_limiter):
         limiter.reset()
     yield
 
