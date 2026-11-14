@@ -22,6 +22,16 @@ function normalizeBaseUrl(raw: string): string {
 // Server-only: never prefix it with NEXT_PUBLIC_.
 const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
 
+/** Full backend URL for a path, for the few callers outside the generated client. */
+export function backendUrl(path: string): string {
+  return `${API_URL}${path}`;
+}
+
+/** The headers every backend call needs (the internal key, when configured). */
+export function backendHeaders(): Record<string, string> {
+  return INTERNAL_API_KEY ? { "X-Internal-Key": INTERNAL_API_KEY } : {};
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,

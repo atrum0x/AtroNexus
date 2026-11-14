@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 import { sendCapture, type CaptureInput } from "./actions";
-import { StatusBlock } from "./status-icon";
+import { StatusBlock } from "@/components/status-icon";
 
 type Step =
   | { kind: "locating" }

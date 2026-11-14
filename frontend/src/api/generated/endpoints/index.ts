@@ -1,3 +1,6 @@
+export * from './approvals/approvals';
+export * from './approvals-hook/approvals-hook';
+export * from './approvals-public/approvals-public';
 export * from './auth/auth';
 export * from './capture/capture';
 export * from './capture-public/capture-public';

@@ -1628,6 +1628,393 @@
         }
       }
     },
+    "/api/approvals/setup": {
+      "get": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Get Approval Setup",
+        "operationId": "get_approval_setup",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Update Approval Setup",
+        "operationId": "update_approval_setup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetupIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/approvals/setup/hook-key": {
+      "post": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Create Hook Key",
+        "description": "A new key for the IFS routing address. The old one stops working at once.",
+        "operationId": "create_hook_key",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HookKeyOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/approvals/setup/check": {
+      "post": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Check Approval Package",
+        "description": "Checks that the IFS package is deployed and the service user may use it.",
+        "operationId": "check_approval_package",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/approvals/requests": {
+      "get": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "List Approval Requests",
+        "operationId": "list_approval_requests",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RequestOut"
+                  },
+                  "title": "Response List Approval Requests"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hooks/ifs/approvals": {
+      "post": {
+        "tags": [
+          "approvals-hook"
+        ],
+        "summary": "Receive Approval Request",
+        "operationId": "receive_approval_request",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HookMessage"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "integer"
+                  },
+                  "title": "Response Receive Approval Request"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/approvals/{token}": {
+      "get": {
+        "tags": [
+          "approvals-public"
+        ],
+        "summary": "Get Approval",
+        "operationId": "get_approval",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 20,
+              "maxLength": 100,
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/approvals/{token}/reject-reasons": {
+      "get": {
+        "tags": [
+          "approvals-public"
+        ],
+        "summary": "Get Approval Reject Reasons",
+        "operationId": "get_approval_reject_reasons",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 20,
+              "maxLength": 100,
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RejectReason"
+                  },
+                  "title": "Response Get Approval Reject Reasons"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/approvals/{token}/decide": {
+      "post": {
+        "tags": [
+          "approvals-public"
+        ],
+        "summary": "Decide Approval",
+        "operationId": "decide_approval",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 20,
+              "maxLength": 100,
+              "title": "Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "tags": [
@@ -1677,6 +2064,84 @@
           "password"
         ],
         "title": "AcceptInvitation"
+      },
+      "ApprovalView": {
+        "properties": {
+          "link_state": {
+            "type": "string",
+            "title": "Link State"
+          },
+          "decision": {
+            "type": "string",
+            "title": "Decision"
+          },
+          "ifs_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ifs Status"
+          },
+          "live": {
+            "type": "boolean",
+            "title": "Live"
+          },
+          "organization": {
+            "type": "string",
+            "title": "Organization"
+          },
+          "approver_name": {
+            "type": "string",
+            "title": "Approver Name"
+          },
+          "requisition_no": {
+            "type": "string",
+            "title": "Requisition No"
+          },
+          "line_no": {
+            "type": "string",
+            "title": "Line No"
+          },
+          "release_no": {
+            "type": "string",
+            "title": "Release No"
+          },
+          "summary": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Summary"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "link_state",
+          "decision",
+          "ifs_status",
+          "live",
+          "organization",
+          "approver_name",
+          "requisition_no",
+          "line_no",
+          "release_no",
+          "summary"
+        ],
+        "title": "ApprovalView",
+        "description": "What the approval page shows."
       },
       "CaptureDefaults": {
         "properties": {
@@ -2294,6 +2759,65 @@
         ],
         "title": "CostLine"
       },
+      "DecisionIn": {
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "reject"
+            ],
+            "title": "Decision"
+          },
+          "reason_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Id"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "decision"
+        ],
+        "title": "DecisionIn"
+      },
+      "DecisionOut": {
+        "properties": {
+          "result": {
+            "type": "string",
+            "title": "Result"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "result",
+          "message"
+        ],
+        "title": "DecisionOut"
+      },
       "ErrorRow": {
         "properties": {
           "title": {
@@ -2345,6 +2869,137 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HookApprover": {
+        "properties": {
+          "fndUser": {
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 1,
+            "title": "Fnduser"
+          },
+          "authorizeId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 30
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authorizeid"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Name",
+            "default": ""
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "minLength": 3,
+            "title": "Email"
+          },
+          "token": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fndUser",
+          "email",
+          "token"
+        ],
+        "title": "HookApprover"
+      },
+      "HookKeyOut": {
+        "properties": {
+          "hook_key": {
+            "type": "string",
+            "title": "Hook Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hook_key"
+        ],
+        "title": "HookKeyOut"
+      },
+      "HookMessage": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "company": {
+            "type": "string",
+            "maxLength": 20,
+            "title": "Company"
+          },
+          "requisitionNo": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Requisitionno"
+          },
+          "lineNo": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 1,
+            "title": "Lineno"
+          },
+          "releaseNo": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 1,
+            "title": "Releaseno"
+          },
+          "sequenceNo": {
+            "type": "integer",
+            "title": "Sequenceno"
+          },
+          "issuedAt": {
+            "type": "integer",
+            "title": "Issuedat"
+          },
+          "approvers": {
+            "items": {
+              "$ref": "#/components/schemas/HookApprover"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Approvers"
+          },
+          "summary": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Summary",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "kind",
+          "company",
+          "requisitionNo",
+          "lineNo",
+          "releaseNo",
+          "sequenceNo",
+          "issuedAt",
+          "approvers"
+        ],
+        "title": "HookMessage"
       },
       "IfsConnectionIn": {
         "properties": {
@@ -3159,6 +3814,152 @@
         ],
         "title": "RecentError"
       },
+      "RejectReason": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "description"
+        ],
+        "title": "RejectReason"
+      },
+      "RequestOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "requisition_no": {
+            "type": "string",
+            "title": "Requisition No"
+          },
+          "line_no": {
+            "type": "string",
+            "title": "Line No"
+          },
+          "release_no": {
+            "type": "string",
+            "title": "Release No"
+          },
+          "sequence_no": {
+            "type": "integer",
+            "title": "Sequence No"
+          },
+          "item": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item"
+          },
+          "line_total": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line Total"
+          },
+          "approver_name": {
+            "type": "string",
+            "title": "Approver Name"
+          },
+          "approver_email": {
+            "type": "string",
+            "title": "Approver Email"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "link_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link State"
+          },
+          "opened_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opened At"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "requisition_no",
+          "line_no",
+          "release_no",
+          "sequence_no",
+          "item",
+          "line_total",
+          "approver_name",
+          "approver_email",
+          "status",
+          "link_state",
+          "opened_at",
+          "decided_at",
+          "error",
+          "created_at"
+        ],
+        "title": "RequestOut"
+      },
       "ResetPasswordRequest": {
         "properties": {
           "token": {
@@ -3198,6 +3999,99 @@
           "role"
         ],
         "title": "RoleChange"
+      },
+      "SetupIn": {
+        "properties": {
+          "connection_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Connection Id"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": false
+          },
+          "link_days": {
+            "type": "integer",
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "title": "Link Days",
+            "default": 7
+          }
+        },
+        "type": "object",
+        "title": "SetupIn"
+      },
+      "SetupOut": {
+        "properties": {
+          "connection_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Connection Id"
+          },
+          "connection_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Connection Name"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "link_days": {
+            "type": "integer",
+            "title": "Link Days"
+          },
+          "hook_url": {
+            "type": "string",
+            "title": "Hook Url"
+          },
+          "has_hook_key": {
+            "type": "boolean",
+            "title": "Has Hook Key"
+          },
+          "hook_key_hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hook Key Hint"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "connection_name",
+          "enabled",
+          "link_days",
+          "hook_url",
+          "has_hook_key",
+          "hook_key_hint"
+        ],
+        "title": "SetupOut"
       },
       "SignupRequest": {
         "properties": {

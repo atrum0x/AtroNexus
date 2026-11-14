@@ -7,3 +7,5 @@ from app import models  # noqa: F401
 from app.capture import models as capture_models  # noqa: F401
 from app.ifs import models as ifs_models  # noqa: F401
 from app.usage import models as usage_models  # noqa: F401
+from app.links import models as links_models  # noqa: F401
+from app.approvals import models as approvals_models  # noqa: F401

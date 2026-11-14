@@ -1,0 +1,131 @@
+-----------------------------------------------------------------------------
+--
+--  Logical unit: CAtxApprovalHandling
+--  Component:    PURCH
+--
+--  AtroNexus calls these as its IFS service user. Every action checks the
+--  token IFS issued (C_Atx_Approval_Util_API), so the service user alone
+--  can't approve anything. Results are JSON (LongText) or a status word.
+--
+--  Date    Sign       History
+--  ------  ---------  ---------------------------------------------------------
+--  261114  AtroNexus  Created.
+-----------------------------------------------------------------------------
+projection CAtxApprovalHandling;
+component PURCH;
+layer Cust;
+description "AtroNexus: approve and reject purchase requisition lines from email";
+category Integration;
+
+--------------------------------- FRAGMENTS ---------------------------------
+
+----------------------------- MAIN ENTRY POINTS -----------------------------
+
+------------------------------ ENTITY DETAILS -------------------------------
+
+------------------------------- ENUMERATIONS --------------------------------
+
+---------------------------------- QUERIES ----------------------------------
+
+---------------------------------- ACTIONS ----------------------------------
+@apidoc {
+   @description : Live status (PENDING, SIGNED, NOT_YET, REJECTED) and a summary of the requisition line, as JSON.
+   @param RequisitionNo : Requisition number
+   @param LineNo : Line number
+   @param ReleaseNo : Release number
+   @param SequenceNo : Authorization step sequence number
+   @param FndUser : The person the token was issued for
+   @param IssuedAt : When IFS issued the token (seconds since 1970, UTC)
+   @param Token : The token IFS issued
+   @return : JSON with status, company, signedBy and summary
+}
+action GetPrLineStatus LongText {
+   initialcheck none;
+   parameter RequisitionNo Text;
+   parameter LineNo Text;
+   parameter ReleaseNo Text;
+   parameter SequenceNo Number;
+   parameter FndUser Text;
+   parameter IssuedAt Number;
+   parameter Token Text;
+}
+
+@apidoc {
+   @description : The company's reject reasons, as a JSON array of {id, description}.
+   @param RequisitionNo : Requisition number
+   @param LineNo : Line number
+   @param ReleaseNo : Release number
+   @param SequenceNo : Authorization step sequence number
+   @param FndUser : The person the token was issued for
+   @param IssuedAt : When IFS issued the token
+   @param Token : The token IFS issued
+   @return : JSON array
+}
+action GetRejectReasons LongText {
+   initialcheck none;
+   parameter RequisitionNo Text;
+   parameter LineNo Text;
+   parameter ReleaseNo Text;
+   parameter SequenceNo Number;
+   parameter FndUser Text;
+   parameter IssuedAt Number;
+   parameter Token Text;
+}
+
+@apidoc {
+   @description : Authorizes the step as the person the token was issued for.
+   @param RequisitionNo : Requisition number
+   @param LineNo : Line number
+   @param ReleaseNo : Release number
+   @param SequenceNo : Authorization step sequence number
+   @param FndUser : The person the token was issued for
+   @param IssuedAt : When IFS issued the token
+   @param Token : The token IFS issued
+   @return : APPROVED, or SIGNED / NOT_YET / REJECTED when the step can't be authorized now
+}
+action ApprovePrLine Text {
+   initialcheck none;
+   parameter RequisitionNo Text;
+   parameter LineNo Text;
+   parameter ReleaseNo Text;
+   parameter SequenceNo Number;
+   parameter FndUser Text;
+   parameter IssuedAt Number;
+   parameter Token Text;
+}
+
+@apidoc {
+   @description : Rejects the step as the person the token was issued for.
+   @param RequisitionNo : Requisition number
+   @param LineNo : Line number
+   @param ReleaseNo : Release number
+   @param SequenceNo : Authorization step sequence number
+   @param FndUser : The person the token was issued for
+   @param IssuedAt : When IFS issued the token
+   @param Token : The token IFS issued
+   @param RejectReasonId : One of the company's reject reasons
+   @param RejectNote : Optional note
+   @return : REJECTED, or SIGNED / NOT_YET when the step can't be rejected now
+}
+action RejectPrLine Text {
+   initialcheck none;
+   parameter RequisitionNo Text;
+   parameter LineNo Text;
+   parameter ReleaseNo Text;
+   parameter SequenceNo Number;
+   parameter FndUser Text;
+   parameter IssuedAt Number;
+   parameter Token Text;
+   parameter RejectReasonId Text;
+   parameter RejectNote Text;
+}
+
+--------------------------------- FUNCTIONS ---------------------------------
+
+-------------------------------- STRUCTURES ---------------------------------
+
+--------------------------------- VIRTUALS ----------------------------------
+
+--------------------------------- SUMMARIES ---------------------------------
+
+-------------------------------- SINGLETONS ---------------------------------

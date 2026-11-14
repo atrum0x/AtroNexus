@@ -93,6 +93,8 @@ The database schema is created and upgraded automatically when the backend start
 
 - **IFS addresses must be public:** a connection's base URL and token URL must use `https://` and point to a public internet address. Internal ones (localhost, private networks, the cloud metadata address) are refused when saving and again on every call. To test against a fake IFS on your own machine, set `ALLOW_PRIVATE_IFS_URLS=true` in `backend/.env` (never in production).
 
+- **Approvals (`/approvals`, tool "Approve from email"):** purchase requisition approvers get an email and approve or reject without signing in to IFS; IFS still records the real approver with their own limits. Needs the IFS package in `ifs/approvals/` (its README has the installation steps), a hook key pasted into IFS, and an IFS connection whose service user has `IMPERSONATE USER`.
+
 How a sign-in works:
 
 1. The login form posts to a Next.js server action, which calls `POST /api/auth/login` on the backend.

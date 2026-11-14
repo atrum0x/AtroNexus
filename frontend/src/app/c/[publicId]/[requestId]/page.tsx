@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { clientIpHeaders } from "@/lib/client-ip";
 
 import { CaptureFlow } from "./capture-flow";
-import { StatusBlock, type Tone } from "./status-icon";
+import { StatusBlock, type Tone } from "@/components/status-icon";
 
 export const metadata: Metadata = {
   title: "Capture location · AtroNexus",
