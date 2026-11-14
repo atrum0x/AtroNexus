@@ -1,10 +1,9 @@
 "use client";
 
-import { AlertCircle, CheckCircle2, KeyRound, Loader2 } from "lucide-react";
-import { useActionState, useState, useTransition } from "react";
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { useActionState, useState } from "react";
 
 import type { IfsConnectionOut, SetupOut } from "@/api/generated/models";
-import { CopyField } from "@/components/copy-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,52 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 
-import { newHookKey, saveSetup, type SetupState } from "./actions";
-
-/** Creates a hook key and shows it once, to paste into the IFS routing address. */
-export function HookKey({ hasKey, hint, readOnly }: { hasKey: boolean; hint: string | null; readOnly: boolean }) {
-  const [key, setKey] = useState<string>();
-  const [error, setError] = useState<string>();
-  const [pending, start] = useTransition();
-
-  function create() {
-    if (hasKey && !window.confirm("Make a new key? The old one stops working at once, so IFS must get the new one.")) {
-      return;
-    }
-    start(async () => {
-      const res = await newHookKey();
-      if (res.key) setKey(res.key);
-      else setError(res.error);
-    });
-  }
-
-  return (
-    <div className="grid gap-2">
-      {key ? (
-        <>
-          <CopyField value={key} label="hook key" />
-          <p className="text-xs text-muted-foreground">
-            Copy it now: it isn&apos;t shown again. Paste it into the bearer token of the routing address
-            C_ATX_APPROVAL_ADDR in IFS.
-          </p>
-        </>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          {hasKey ? `A key ending in …${hint} is set.` : "No key yet."}
-        </p>
-      )}
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      {!readOnly && !key && (
-        <div>
-          <Button type="button" variant="outline" disabled={pending} onClick={create}>
-            {pending ? <Loader2 className="animate-spin" /> : <KeyRound />}
-            {hasKey ? "Make a new key" : "Create hook key"}
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
+import { saveSetup, type SetupState } from "./actions";
 
 export function SetupForm({
   setup,

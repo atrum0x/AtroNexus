@@ -11,6 +11,7 @@ from decimal import Decimal
 
 CAPTURE = "capture"
 APPROVALS = "approvals"
+MESSAGING = "messaging"
 
 
 @dataclass(frozen=True)
@@ -35,12 +36,13 @@ TOOLS: tuple[Tool, ...] = (
         available=True,
     ),
     Tool(
-        "messaging",
+        MESSAGING,
         "Messaging hub",
-        "Send WhatsApp and SMS messages from IFS events and commands.",
+        "Send WhatsApp messages from any IFS event: your own templates, filled with IFS data. SMS later.",
         Decimal("49"),
         usage_price=Decimal("0.02"),
         usage_unit="message",
+        available=True,
     ),
     Tool(
         APPROVALS,

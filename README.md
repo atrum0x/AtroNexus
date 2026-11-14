@@ -103,6 +103,20 @@ How a sign-in works:
 4. Server components and actions send the token to the backend as `Authorization: Bearer`.
 5. Pages other than `/login` redirect to the login page when there's no session. An expired or rejected token clears the cookie.
 
+## Messaging hub (tool 2): WhatsApp
+
+Customers write WhatsApp **templates**, and **scenarios** that map IFS values to a template's variables. IFS calls a scenario by its code (`C_Atx_Message_Util_API.Send`, from the IFS package on the Messaging page) and AtroNexus sends the message through Meta's WhatsApp Cloud API. For now every customer sends from one shared AtroNexus number; customers' own numbers come later.
+
+**Connect WhatsApp (once, for the platform):**
+1. At [developers.facebook.com](https://developers.facebook.com), create an app of type *Business* and add the **WhatsApp** product. Meta gives you a free test number that can message up to 5 verified phone numbers.
+2. *WhatsApp → API Setup* shows the **Phone number ID** and the **WhatsApp Business Account ID**. Set them as `WHATSAPP_PHONE_NUMBER_ID` and `WHATSAPP_BUSINESS_ACCOUNT_ID`, and the number itself as `WHATSAPP_DISPLAY_NUMBER` (shown to customers).
+3. For `WHATSAPP_ACCESS_TOKEN`, create a **system user** in Meta Business settings with the permissions `whatsapp_business_messaging` and `whatsapp_business_management`, assign it the app and the WhatsApp account, and generate a token that doesn't expire. The temporary token on the API Setup page stops working after a day.
+4. `META_APP_SECRET`: *App settings → Basic → App secret*. `META_WEBHOOK_VERIFY_TOKEN`: any random string.
+5. *WhatsApp → Configuration → Webhook*: callback URL `https://<vercel-app>/api/hooks/meta/whatsapp`, verify token as above. Subscribe to the fields **messages** (delivery reports) and **message_template_status_update** (template reviews).
+6. Real customers need Meta business verification and a real number; until then only the test recipients get messages.
+
+Without these settings the hub still works for setting up: templates stay drafts with the reason shown, and sending answers "WhatsApp isn't connected".
+
 ## Capture page (tool 1)
 
 A button in IFS opens a link to this site. The page reads the user's location, IP address and device, and writes them back to the IFS record.
@@ -190,6 +204,7 @@ Notes:
    | `APP_URL` | the Vercel address, e.g. `https://atro-nexus.vercel.app` (links in emails point here) |
    | `EMAIL_BACKEND` | `console` until you have a sending domain (emails go to the log), then `resend` |
    | `RESEND_API_KEY`, `EMAIL_FROM` | only with `EMAIL_BACKEND=resend`; `EMAIL_FROM` like `AtroNexus <no-reply@yourdomain.com>` |
+   | `WHATSAPP_*`, `META_APP_SECRET`, `META_WEBHOOK_VERIFY_TOKEN` | for the messaging hub; see "Messaging hub" below |
 
 4. Deploy, then open `https://<northflank-url>/api/health`. It should answer `{"status":"ok"}`. Any other path should answer `{"detail":"Forbidden"}`, which shows the key check works.
 

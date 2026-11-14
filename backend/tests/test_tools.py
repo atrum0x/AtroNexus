@@ -29,7 +29,7 @@ def test_catalog_lists_every_tool_with_prices(client, auth_headers):
     assert capture["available"] is True
     assert float(capture["monthly_price"]) > 0
     messaging = listed["messaging"]
-    assert messaging["available"] is False
+    assert messaging["available"] is True
     assert messaging["usage_unit"] == "message"
 
 
@@ -71,7 +71,7 @@ def test_switching_is_logged_with_who_did_it(client):
 
 
 def test_tools_that_arent_built_cant_be_switched_on(client, auth_headers):
-    res = switch(client, auth_headers, "messaging", True)
+    res = switch(client, auth_headers, "email_in", True)
     assert res.status_code == 409
     assert switch(client, auth_headers, "nope", True).status_code == 404
 

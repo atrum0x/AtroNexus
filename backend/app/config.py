@@ -56,7 +56,30 @@ class Settings(BaseSettings):
     # Must be an address on a domain verified in Resend.
     email_from: str = "AtroNexus <no-reply@example.com>"
 
-    @field_validator("admin_email", "resend_api_key", mode="before")
+    # WhatsApp (Meta's WhatsApp Cloud API), for the messaging hub. For now one
+    # shared AtroNexus number sends for every organization; customers' own
+    # numbers come later. While unset, messages and templates can't be sent.
+    whatsapp_business_account_id: str | None = None  # WABA ID: templates live here
+    whatsapp_phone_number_id: str | None = None  # the sending number's ID (not the number)
+    whatsapp_access_token: str | None = None  # a system user token with whatsapp_business_messaging/management
+    whatsapp_display_number: str | None = None  # shown to customers, e.g. "+94 77 123 4567"
+    # From the Meta app: signs webhook calls (X-Hub-Signature-256).
+    meta_app_secret: str | None = None
+    # Any string; typed into the Meta app's webhook settings, which echo it back once to verify.
+    meta_webhook_verify_token: str | None = None
+    meta_graph_url: str = "https://graph.facebook.com/v23.0"
+
+    @field_validator(
+        "admin_email",
+        "resend_api_key",
+        "whatsapp_business_account_id",
+        "whatsapp_phone_number_id",
+        "whatsapp_access_token",
+        "whatsapp_display_number",
+        "meta_app_secret",
+        "meta_webhook_verify_token",
+        mode="before",
+    )
     @classmethod
     def empty_is_none(cls, value: object) -> object:
         return None if value == "" else value

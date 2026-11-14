@@ -10,6 +10,7 @@ import { listConnections } from "@/api/generated/endpoints/ifs-connections/ifs-c
 import type { FlowOut, RequestOut } from "@/api/generated/models";
 import { CheckButton } from "@/components/check-button";
 import { CopyField } from "@/components/copy-field";
+import { HookKey } from "@/components/hook-key";
 import { PageHeader, TableSkeleton } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,9 +26,9 @@ import {
 import { getCurrentUser } from "@/lib/auth";
 import { canManage } from "@/lib/roles";
 
-import { checkPackage } from "./actions";
+import { checkPackage, newHookKey } from "./actions";
 import { FlowSwitch } from "./flow-switch";
-import { HookKey, SetupForm } from "./setup-form";
+import { SetupForm } from "./setup-form";
 
 export default function ApprovalsPage() {
   return (
@@ -139,7 +140,13 @@ async function Setup() {
           </div>
           <div className="grid gap-1.5">
             <span className="text-sm font-medium">Hook key</span>
-            <HookKey hasKey={setup.has_hook_key} hint={setup.hook_key_hint ?? null} readOnly={readOnly} />
+            <HookKey
+              hasKey={setup.has_hook_key}
+              hint={setup.hook_key_hint ?? null}
+              readOnly={readOnly}
+              addressName="C_ATX_APPROVAL_ADDR"
+              create={newHookKey}
+            />
           </div>
         </CardContent>
       </Card>

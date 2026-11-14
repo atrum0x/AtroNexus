@@ -7,6 +7,7 @@ import type { ToolOut } from "@/api/generated/models";
 
 export const CAPTURE = "capture";
 export const APPROVALS = "approvals";
+export const MESSAGING = "messaging";
 
 /** The tool catalog with this organization's on/off state, fetched once per request. */
 export const getTools = cache(async (): Promise<ToolOut[]> => listTools());
