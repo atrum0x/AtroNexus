@@ -1,6 +1,6 @@
 # AtroNexus progress notes
 
-What has been built so far, why, and what's still open. Last updated 13 November 2026. For how to run and deploy, see `README.md`. For conventions to follow when changing the code, see `CLAUDE.md`.
+What has been built so far, why, and what's still open. Last updated 14 November 2026. For how to run and deploy, see `README.md`. For conventions to follow when changing the code, see `CLAUDE.md`.
 
 ## Where things run
 
@@ -195,30 +195,47 @@ The plan: customers sign up themselves, each company has its own space and dashb
 
 **Frontend (Vercel):** `API_URL` (the Northflank address, with `https://`), `INTERNAL_API_KEY` (the same value as on Northflank, never `NEXT_PUBLIC_`).
 
-## Open items
+## Where we are (14 November 2026)
+
+Live on Vercel, Northflank and Neon (migration `0009`):
+- **Platform:** self-service sign-up, email sign-in and verification, password reset, teams and roles, tools switched on per organization, usage counting and the dashboard, platform admin, the SSRF guard, sidebar, light/dark mode, and real email from `no-reply-atronexus@atrum0x.com`.
+- **Tool 1, capture page:** works end to end on putedar-dev1; rate limits and the New link button are in.
+- **Tool 3, approvals from email:** the whole AtroNexus side works and is tested against a fake IFS. Customers choose approval types (purchase requisition lines built, five types listed as coming soon) and download the IFS package from the Approvals page. **The IFS side has never run on a real IFS.**
+
+## Next
+
+**1. Test approvals on a real IFS (you, when you have time).** On putedar-dev1 (DSS UAT can't be reached from Northflank yet):
+1. On the Approvals page, switch on purchase requisition lines, then download the package.
+2. Build and deploy the four files in `workspace/purch` (component PURCH, layer Cust). Send any compile errors; the PL/SQL has never been compiled.
+3. Add the object property `CAtxApproval / * / HMAC_SECRET` (32+ random characters).
+4. Import `config/C_ATX_APPROVALS.zip`, and enable the event `PUR_REQ_LINE_TO_BE_AUTHORIZED`.
+5. Import the routing rule and address, and paste the hook key (Approvals step 3) into the address.
+6. Give the service user a permission set with the projection `CAtxApprovalHandling` and the system privilege `IMPERSONATE USER`.
+7. Approvals step 5: *Check IFS*. Then release a test requisition line that needs authorization, approve it from the email, and confirm IFS shows the approver as the signer. Try a reject too, and an approver over their limit.
+
+If something fails, the places to look are *Application Messages* in IFS (did the message leave, what did AtroNexus answer), the IFS trace, and the request log on the Approvals page.
+
+**2. After the real test works, options (pick one):**
+- **More approval types.** Purchase orders and PO change orders first: same pattern, standard events `PUR_ORD_LINE_TO_BE_AUTHORIZED` and `POCO_TO_BE_AUTHORIZED` (re-check them in the core files). Each needs PL/SQL + projection actions, an event action under `flows/<type>/`, and its entry in `app/approvals/flows.py`.
+- **Approval extras:** reminder emails for open approvals, and a PIN or sign-in for high-value approvals (the design doc asks for it).
+- **Tool 2, messaging hub** (WhatsApp/SMS). Approvals by WhatsApp, email-in and guest links build on it. Needs a decision on providers (the design doc lists it as open).
+- **Tool 7, configuration change tracker.** Only needs the IFS connector; read-only, so it's lower risk.
+
+**3. Hardening before real customers:**
+- Rate limits on sign-in, sign-up and password reset; a CAPTCHA on sign-up.
+- Terms of service and privacy pages; payments later (monthly fee per switched-on tool plus usage, from the usage records).
+- The licensing question: confirm with IFS in writing that approvals (and later guest links) don't count as indirect access.
 
 **Needs action from you:**
-
 - **Rotate the Neon password.** It was shared in a chat. Reset it in Neon and update `DATABASE_URL` on Northflank.
-- **A sending domain** for email (Resend). Until then, confirmation, reset and invitation links are only in the Northflank backend log.
-- **Real tool prices.** They live in `backend/app/tools/catalog.py`.
-- **DSS UAT is unreachable from Northflank.** Connections time out; DSS probably allows only certain IP addresses. Options: a static outbound IP on Northflank that DSS allows, or a relay inside an allowed network. `putedar-dev1` works.
-
-**Next SaaS steps:**
-
-5. ~~Usage counting and an overview dashboard per organization.~~ Done in PR #6.
-6. ~~Platform admin view: every customer, their tools and usage, suspending a customer.~~ Done in PR #7.
-7. Hardening: ~~block internal addresses as IFS URLs (SSRF)~~ done in PR #8. Still open: rate limits on sign-in, sign-up and public endpoints, a CAPTCHA on sign-up.
-
-Later: payments (monthly subscription per switched-on tool, usage billed from the usage records), terms of service and privacy pages before public sign-up.
+- **Real tool prices.** They live in `backend/app/tools/catalog.py` (placeholders now).
+- **DSS UAT is unreachable from Northflank.** DSS probably allows only certain IP addresses. Options: a static outbound IP on Northflank that DSS allows, or a relay inside an allowed network. `putedar-dev1` works.
 
 **Possible capture page improvements that were discussed:**
-
 - More device placeholders (browser and version, device type, OS version).
-- Switch the DSS target to PATCH with `{request_id}` as the `Objkey`, so IFS checks the request exists.
+- Switch the DSS target to PATCH with `{request_id}` as the `Objkey`, so IFS checks the request exists; optionally accept only requests whose IFS status is still waiting for capture.
+- One-time links per request instead of one shared link per capture page (the secure-links block can do it now).
 - A CA certificate field per connection, instead of adding certificates to the Docker image.
-
-**After the capture page, the planned tool order:** messaging hub (needed by approvals, email-in and guest links), approvals, email-in, SharePoint, guest links. The change tracker only needs the IFS connector and can come at any time. Recommendation made: build approvals by email next, since it reuses the capture page's round trip and brings the secure-links and email building blocks with it.
 
 ## Lessons for working on this repo
 
