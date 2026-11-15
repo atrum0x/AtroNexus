@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     meta_app_secret: str | None = None
     # Any string; typed into the Meta app's webhook settings, which echo it back once to verify.
     meta_webhook_verify_token: str | None = None
-    meta_graph_url: str = "https://graph.facebook.com/v23.0"
+    meta_graph_url: str = "https://graph.facebook.com/v25.0"
 
     @field_validator(
         "admin_email",
